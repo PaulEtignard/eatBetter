@@ -1,12 +1,10 @@
-// Looks up an ingredient on Open Food Facts and returns candidate macro profiles (per 100g)
+// Looks up an ingredient's macro profile (per 100g) via our own serverless proxy,
+// which calls Open Food Facts server-side to avoid the browser CORS restriction.
 export async function searchOpenFoodFacts(term) {
   if (!term || term.trim().length < 2) return []
-  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(
-    term
-  )}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,code,nutriments`
 
-  const res = await fetch(url)
-  if (!res.ok) throw new Error('Recherche Open Food Facts impossible')
+  const res = await fetch(`/api/off-search?q=${encodeURIComponent(term)}`)
+  if (!res.ok) throw new Error('Recherche de macros impossible')
   const data = await res.json()
   const products = data.products || []
 
