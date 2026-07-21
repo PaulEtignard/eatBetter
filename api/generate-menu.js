@@ -71,6 +71,11 @@ ${preferences ? `Préférences/contraintes à respecter impérativement : ${pref
 ${reuseInstructions}
 Varie les recettes autant que possible d'un jour à l'autre et entre petit-déjeuner/déjeuner/dîner/collation : la variété est l'objectif principal, plus important que l'optimisation exacte des macros. Cuisine familiale simple et réaliste, ingrédients courants, quantités en grammes (ou ml/pièce quand pertinent) réalistes pour une portion.
 
+Consignes de variété par type de repas — NE PAS proposer le même type de plat deux fois sur toute la période. Regarde la liste des recettes existantes ci-dessus (s'il y en a) : si un type de plat y figure déjà pour une catégorie donnée (ex. une omelette en "breakfast"), NE PROPOSE PAS un autre plat du même type pour cette catégorie, choisis autre chose dans la liste ci-dessous.
+- Petit-déjeuner : alterne entre porridge/flocons d'avoine, tartines (beurre/confiture/fromage), pancakes ou gaufres, smoothie ou smoothie bowl, yaourt/skyr avec fruits et granola, oeufs brouillés ou pochés, pain perdu, muesli, fromage blanc. N'utilise une omelette qu'UNE SEULE fois maximum sur toute la période, jamais deux jours de suite, et jamais si une omelette apparaît déjà dans la liste des recettes existantes ci-dessus.
+- Déjeuner et dîner : alterne les sources de protéines (poulet, boeuf, porc, poisson, oeufs, légumineuses, tofu) et les styles de cuisine (française, italienne, méditerranéenne, asiatique, mexicaine, orientale). Évite de répéter la même association protéine+féculent (ex. "poulet + riz" puis encore "poulet + riz") deux fois dans la semaine.
+- Collation : varie entre fruits, yaourts, oléagineux, barres protéinées maison, compotes, fromage.
+
 Réponds STRICTEMENT avec un objet JSON valide, sans texte autour, sans balises markdown, au format exact :
 {
   "days": [
@@ -104,7 +109,7 @@ Rappel : un repas qui réutilise une recette existante n'a PAS besoin du champ "
       body: JSON.stringify({
         model: 'openai/gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.5,
+        temperature: 0.75,
         max_tokens: Math.min(6000, days * 900 + 400),
         response_format: { type: 'json_object' },
       }),
