@@ -410,6 +410,9 @@ button {
   flex-direction: column;
   max-height: calc(100vh - 80px);
 }
+.modal.meal-editor {
+  max-width: 660px;
+}
 .modal-header {
   display: flex;
   align-items: center;
@@ -453,9 +456,19 @@ button {
   font-size: 0.95rem;
   font-family: inherit;
 }
+.meal-basics {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: start;
+}
+.field-color {
+  min-width: 150px;
+}
 .color-picker {
   display: flex;
   gap: 8px;
+  padding-top: 2px;
 }
 .color-swatch {
   width: 26px;
@@ -470,83 +483,108 @@ button {
 
 .ingredients-section {
   border-top: 1px solid var(--border);
-  padding-top: 14px;
+  padding-top: 16px;
 }
 .ingredients-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  gap: 10px;
 }
 .ingredients-header h3 {
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 .macro-pill {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   color: var(--citrus);
   background: rgba(232, 185, 48, 0.1);
-  padding: 4px 8px;
+  padding: 5px 10px;
   border-radius: 20px;
+  white-space: nowrap;
 }
-.ingredient-row {
+
+.ingredients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ingredient-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.ingredient-card-main {
   display: grid;
-  grid-template-columns: 1.6fr 0.6fr 0.9fr auto auto;
-  gap: 6px;
+  grid-template-columns: 1fr 74px 96px auto;
+  gap: 8px;
   align-items: center;
-  margin-bottom: 8px;
+}
+.ingredient-name-wrap {
   position: relative;
 }
-.ingredient-row input,
-.ingredient-row select {
+.ing-name {
+  width: 100%;
+}
+.ingredient-card input,
+.ingredient-card select {
   background: var(--ink);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 7px 8px;
+  border-radius: 7px;
+  padding: 8px 10px;
   color: var(--chalk);
-  font-size: 0.82rem;
+  font-size: 0.85rem;
+  font-family: inherit;
 }
-.ing-macro-readout {
-  grid-column: 1 / -1;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  color: var(--sage);
+.ing-spinner {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid rgba(232, 185, 48, 0.25);
+  border-top-color: var(--citrus);
+  animation: spin 0.7s linear infinite;
 }
-.ing-manual-macros {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+@keyframes spin {
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
 }
-.ing-manual-macros input {
-  background: var(--ink);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 6px 8px;
-  color: var(--chalk-dim);
-  font-size: 0.72rem;
+.ingredient-remove {
+  justify-self: center;
 }
-.lookup-panel {
-  grid-column: 1 / -1;
+
+.autocomplete-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 10;
   background: var(--ink);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.lookup-loading,
-.lookup-empty {
-  font-size: 0.78rem;
-  color: var(--chalk-dim);
+  box-shadow: var(--shadow);
+  list-style: none;
   margin: 0;
+  padding: 4px;
+  max-height: 220px;
+  overflow-y: auto;
 }
-.lookup-result {
+.autocomplete-list li + li {
+  margin-top: 2px;
+}
+.autocomplete-list button {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  background: var(--surface-raised);
+  background: transparent;
   border: none;
   border-radius: 6px;
   padding: 8px 10px;
@@ -555,9 +593,86 @@ button {
   font-size: 0.8rem;
   text-align: left;
 }
-.lookup-result:hover {
+.autocomplete-list button:hover {
   background: var(--sage);
   color: #10201a;
+}
+.autocomplete-kcal {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--chalk-dim);
+  white-space: nowrap;
+}
+.autocomplete-list button:hover .autocomplete-kcal {
+  color: #10201a;
+}
+
+.ingredient-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+}
+.ing-macro-readout {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--sage);
+}
+.ing-macro-unit {
+  color: var(--chalk-dim);
+}
+.ing-macro-missing {
+  font-size: 0.75rem;
+  color: var(--chalk-dim);
+  font-style: italic;
+}
+.ing-manual-toggle {
+  background: none;
+  border: none;
+  color: var(--chalk-dim);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  padding: 0;
+}
+.ing-manual-toggle:hover {
+  color: var(--citrus);
+}
+
+.ing-manual-macros {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+.ing-manual-macros label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: var(--chalk-dim);
+}
+.ing-manual-macros input {
+  font-size: 0.78rem;
+}
+
+.add-ingredient-btn {
+  margin-top: 12px;
+  width: 100%;
+  border-style: dashed;
+}
+
+@media (max-width: 560px) {
+  .meal-basics {
+    grid-template-columns: 1fr;
+  }
+  .ingredient-card-main {
+    grid-template-columns: 1fr 60px 80px auto;
+  }
 }
 
 /* ---------- Shopping list ---------- */
