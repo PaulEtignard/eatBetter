@@ -3,12 +3,15 @@ export const config = {
 }
 
 export default async function handler(req, res) {
+  console.log('[generate-menu] incoming request', { method: req.method })
+
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'method_not_allowed' })
     return
   }
 
   const apiKey = process.env.OPENROUTER_API_KEY
+  console.log('[generate-menu] OPENROUTER_API_KEY present:', Boolean(apiKey))
   if (!apiKey) {
     res.status(200).json({ error: 'missing_api_key' })
     return
@@ -25,7 +28,10 @@ export default async function handler(req, res) {
     existingMeals = [],
   } = req.body || {}
 
+  console.log('[generate-menu] params', { days, dailyCalories, dailyProtein, dailyCarbs, dailyFat, slots, preferences, existingMealsCount: existingMeals.length })
+
   if (!dailyCalories || !dailyProtein) {
+    console.warn('[generate-menu] missing_targets', { dailyCalories, dailyProtein })
     res.status(400).json({ error: 'missing_targets' })
     return
   }
@@ -84,7 +90,9 @@ Réponds STRICTEMENT avec un objet JSON valide, sans texte autour, sans balises 
 Le tableau "days" doit contenir exactement ${days} éléments, dans l'ordre chronologique. Les valeurs de macros par 100g doivent être des estimations nutritionnelles réalistes pour chaque ingrédient. L'unité doit être une de: g, ml, pièce, cs, cc.
 Rappel : un repas qui réutilise une recette existante n'a PAS besoin du champ "ingredients", juste {"slot": "...", "reuse": "Nom exact"}.`
 
+  const startedAt = Date.now()
   try {
+    console.log('[generate-menu] calling OpenRouter…')
     const aiRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -102,24 +110,39 @@ Rappel : un repas qui réutilise une recette existante n'a PAS besoin du champ "
       }),
     })
 
+    console.log('[generate-menu] OpenRouter responded', { status: aiRes.status, ms: Date.now() - startedAt })
+
     if (!aiRes.ok) {
       const text = await aiRes.text()
+      console.error('[generate-menu] OpenRouter error body:', text.slice(0, 1000))
       res.status(200).json({ error: 'ai_error', detail: text.slice(0, 300) })
       return
     }
 
     const data = await aiRes.json()
     const raw = data.choices?.[0]?.message?.content || ''
+    console.log('[generate-menu] raw content length:', raw.length)
     const cleaned = raw.replace(/```json|```/g, '').trim()
-    const parsed = JSON.parse(cleaned)
 
-    if (!Array.isArray(parsed.days)) {
-      res.status(200).json({ error: 'invalid_response' })
+    let parsed
+    try {
+      parsed = JSON.parse(cleaned)
+    } catch (parseErr) {
+      console.error('[generate-menu] JSON.parse failed:', String(parseErr), 'raw (first 500 chars):', cleaned.slice(0, 500))
+      res.status(200).json({ error: 'invalid_response', detail: 'json_parse_failed' })
       return
     }
 
+    if (!Array.isArray(parsed.days)) {
+      console.error('[generate-menu] parsed.days is not an array:', JSON.stringify(parsed).slice(0, 500))
+      res.status(200).json({ error: 'invalid_response', detail: 'no_days_array' })
+      return
+    }
+
+    console.log('[generate-menu] success, days:', parsed.days.length, 'total ms:', Date.now() - startedAt)
     res.status(200).json({ days: parsed.days })
   } catch (err) {
+    console.error('[generate-menu] fetch_failed exception:', err && err.stack ? err.stack : String(err), 'ms elapsed:', Date.now() - startedAt)
     res.status(200).json({ error: 'fetch_failed', detail: String(err).slice(0, 300) })
   }
 }

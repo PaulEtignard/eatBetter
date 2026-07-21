@@ -57,6 +57,7 @@ export default function GenerateMenuModal({ members, onCancel, onGenerate }) {
         (msg) => setProgress(msg)
       )
     } catch (err) {
+      console.error('[GenerateMenuModal] generation failed:', err)
       setError(err.message || "La génération a échoué. Réessaie dans un instant.")
     } finally {
       setLoading(false)

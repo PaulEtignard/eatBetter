@@ -302,6 +302,7 @@ export default function App() {
   }
 
   async function handleGenerateMenu(params, onProgress) {
+    console.log('[handleGenerateMenu] called with params:', params)
     // Give the AI a compact summary of existing household recipes so it can reuse them
     const existingMeals = meals.map((m) => ({
       name: m.name,
@@ -318,30 +319,42 @@ export default function App() {
     const allDayResults = []
     for (let i = 0; i < totalDays; i += 1) {
       if (onProgress) onProgress(`Génération du jour ${i + 1} / ${totalDays}…`)
+      console.log(`[generateMenu] requesting day ${i + 1}/${totalDays}…`)
 
-      const res = await fetch('/api/generate-menu', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          days: 1,
-          dailyCalories: params.dailyCalories,
-          dailyProtein: params.dailyProtein,
-          dailyCarbs: params.dailyCarbs,
-          dailyFat: params.dailyFat,
-          slots: params.slots,
-          preferences: params.preferences,
-          existingMeals,
-        }),
-      })
+      let res
+      try {
+        res = await fetch('/api/generate-menu', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            days: 1,
+            dailyCalories: params.dailyCalories,
+            dailyProtein: params.dailyProtein,
+            dailyCarbs: params.dailyCarbs,
+            dailyFat: params.dailyFat,
+            slots: params.slots,
+            preferences: params.preferences,
+            existingMeals,
+          }),
+        })
+      } catch (networkErr) {
+        console.error('[generateMenu] network error on fetch:', networkErr)
+        throw new Error(`Impossible de contacter le serveur pour le jour ${i + 1} (erreur réseau). Vérifie ta connexion et réessaie.`)
+      }
+
+      console.log(`[generateMenu] day ${i + 1} response status:`, res.status)
 
       let data
       try {
         data = await res.json()
-      } catch {
+      } catch (parseErr) {
+        console.error('[generateMenu] failed to parse JSON response:', parseErr)
         throw new Error(
-          `Le serveur n'a pas répondu correctement pour le jour ${i + 1} (délai dépassé ou erreur réseau). Réessaie.`
+          `Le serveur n'a pas répondu correctement pour le jour ${i + 1} (délai dépassé ou erreur réseau, statut ${res.status}). Réessaie.`
         )
       }
+
+      console.log(`[generateMenu] day ${i + 1} data:`, data)
 
       if (data.error === 'missing_api_key') {
         throw new Error(
@@ -349,7 +362,8 @@ export default function App() {
         )
       }
       if (data.error || !Array.isArray(data.days) || data.days.length === 0) {
-        throw new Error(`L'IA n'a pas réussi à générer le jour ${i + 1}. Réessaie.`)
+        console.error(`[generateMenu] day ${i + 1} generation failed:`, data)
+        throw new Error(`L'IA n'a pas réussi à générer le jour ${i + 1} (${data.error || 'réponse vide'}). Réessaie.`)
       }
 
       allDayResults.push(data.days[0])
@@ -390,6 +404,7 @@ export default function App() {
     // 1. Bulk create only the genuinely new meal rows
     let insertedMeals = []
     if (toCreate.length > 0) {
+      console.log('[handleGenerateMenu] creating', toCreate.length, 'new meals')
       const mealRows = toCreate.map((m) => ({
         user_id: userId,
         household_id: household.id,
@@ -399,7 +414,10 @@ export default function App() {
         ai_generated: true,
       }))
       const { data: created, error: mealsErr } = await supabase.from('meals').insert(mealRows).select()
-      if (mealsErr) throw mealsErr
+      if (mealsErr) {
+        console.error('[handleGenerateMenu] meals insert failed:', mealsErr)
+        throw mealsErr
+      }
       insertedMeals = created
 
       const ingredientRows = []
@@ -422,7 +440,10 @@ export default function App() {
       })
       if (ingredientRows.length > 0) {
         const { error: ingErr } = await supabase.from('meal_ingredients').insert(ingredientRows)
-        if (ingErr) throw ingErr
+        if (ingErr) {
+          console.error('[handleGenerateMenu] ingredients insert failed:', ingErr)
+          throw ingErr
+        }
       }
     }
 
@@ -444,9 +465,14 @@ export default function App() {
       plan_date: toISODate(addDays(weekMonday, m.dayIndex)),
       slot: m.slot,
     }))
+    console.log('[handleGenerateMenu] placing', placementRows.length, 'meals on the calendar')
     const { error: placeErr } = await supabase.from('planned_meals').insert(placementRows)
-    if (placeErr) throw placeErr
+    if (placeErr) {
+      console.error('[handleGenerateMenu] placements insert failed:', placeErr)
+      throw placeErr
+    }
 
+    console.log('[handleGenerateMenu] success, reloading data')
     setShowGenerateMenu(false)
     await loadData()
   }
