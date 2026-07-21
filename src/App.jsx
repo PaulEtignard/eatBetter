@@ -32,6 +32,7 @@ export default function App() {
   const [overrides, setOverrides] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
+  const [infoMsg, setInfoMsg] = useState('')
 
   const [weekMonday, setWeekMonday] = useState(() => getMonday(new Date()))
   const [editorState, setEditorState] = useState(null) // null | 'new' | meal object
@@ -327,6 +328,13 @@ export default function App() {
     const memberId = params.memberId
     const totalDays = params.days
 
+    // Slots already occupied by this member's own placements: the AI still invents/creates
+    // recipes for every day+slot (so the library grows), but we won't place a new meal on
+    // top of a cell this member has already filled in.
+    const occupiedKeys = new Set(
+      plannedMeals.filter((p) => p.member_id === memberId).map((p) => `${p.plan_date}__${p.slot}`)
+    )
+
     // Generate one day at a time: a full week in one request risks exceeding the
     // serverless function's execution time limit and failing silently.
     const allDayResults = []
@@ -500,24 +508,51 @@ export default function App() {
       keyToMealId.set(normalizeName(m.name), insertedMeals[idx].id)
     })
 
-    // 2. Bulk place each meal on its target day/slot, for the chosen member
-    const placementRows = flatMeals.map((m) => ({
-      user_id: userId,
-      household_id: household.id,
-      member_id: memberId,
-      meal_id: keyToMealId.get(normalizeName(m.name)),
-      plan_date: toISODate(addDays(weekMonday, m.dayIndex)),
-      slot: m.slot,
-    }))
+    // 2. Bulk place each meal on its target day/slot, for the chosen member —
+    // skipping any cell that member has already filled in
+    const skippedMeals = []
+    const placementRows = []
+    flatMeals.forEach((m) => {
+      const iso = toISODate(addDays(weekMonday, m.dayIndex))
+      const key = `${iso}__${m.slot}`
+      if (occupiedKeys.has(key)) {
+        skippedMeals.push(m)
+        return
+      }
+      placementRows.push({
+        user_id: userId,
+        household_id: household.id,
+        member_id: memberId,
+        meal_id: keyToMealId.get(normalizeName(m.name)),
+        plan_date: iso,
+        slot: m.slot,
+      })
+    })
+
+    if (skippedMeals.length > 0) {
+      console.log(
+        `[handleGenerateMenu] ${skippedMeals.length} recette(s) créée(s) mais non placée(s) (créneau déjà occupé):`,
+        skippedMeals.map((m) => `${m.name} (jour ${m.dayIndex + 1}, ${m.slot})`)
+      )
+    }
+
     console.log('[handleGenerateMenu] placing', placementRows.length, 'meals on the calendar')
-    const { error: placeErr } = await supabase.from('planned_meals').insert(placementRows)
-    if (placeErr) {
-      console.error('[handleGenerateMenu] placements insert failed:', placeErr)
-      throw placeErr
+    if (placementRows.length > 0) {
+      const { error: placeErr } = await supabase.from('planned_meals').insert(placementRows)
+      if (placeErr) {
+        console.error('[handleGenerateMenu] placements insert failed:', placeErr)
+        throw placeErr
+      }
     }
 
     console.log('[handleGenerateMenu] success, reloading data')
     setShowGenerateMenu(false)
+    if (skippedMeals.length > 0) {
+      setInfoMsg(
+        `Menu généré : ${placementRows.length} repas placés. ${skippedMeals.length} recette(s) créée(s) et ajoutée(s) à ta bibliothèque, mais pas placées car ces créneaux étaient déjà occupés.`
+      )
+      setTimeout(() => setInfoMsg(''), 8000)
+    }
     await loadData()
   }
 
@@ -566,6 +601,7 @@ export default function App() {
       </header>
 
       {errorMsg && <div className="global-error">{errorMsg}</div>}
+      {infoMsg && <div className="global-info">{infoMsg}</div>}
 
       <main className="app-main">
         <MealLibrary
