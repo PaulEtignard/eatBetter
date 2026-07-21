@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { searchIngredientMacros } from './openFoodFacts'
-import { round } from './utils'
+import { round, UNIT_GRAM_EQUIVALENTS } from './utils'
 
 const DEBOUNCE_MS = 600
 
@@ -63,6 +63,22 @@ export default function IngredientRow({ ingredient, onChange, onRemove }) {
     if (s.source === 'ai') setShowManualMacros(true)
   }
 
+  function handleUnitChange(newUnit) {
+    const oldUnit = ingredient.unit
+    const oldFactor = UNIT_GRAM_EQUIVALENTS[oldUnit]
+    const newFactor = UNIT_GRAM_EQUIVALENTS[newUnit]
+    // Only convert between units that both have a known grams-equivalent (g/ml/cs/cc).
+    // "pièce" has no generic conversion (an egg and a lemon don't weigh the same), so
+    // switching to/from it just changes the label and leaves the quantity as-is.
+    if (oldFactor && newFactor && ingredient.quantity !== '' && ingredient.quantity != null) {
+      const grams = Number(ingredient.quantity) * oldFactor
+      const converted = Math.round((grams / newFactor) * 100) / 100
+      onChange({ unit: newUnit, quantity: converted })
+    } else {
+      onChange({ unit: newUnit })
+    }
+  }
+
   const hasMacros = ingredient.calories_per_100g !== '' && ingredient.calories_per_100g != null
 
   return (
@@ -117,7 +133,7 @@ export default function IngredientRow({ ingredient, onChange, onRemove }) {
         <select
           className="ing-unit"
           value={ingredient.unit}
-          onChange={(e) => onChange({ unit: e.target.value })}
+          onChange={(e) => handleUnitChange(e.target.value)}
           aria-label="Unité"
         >
           <option value="g">g</option>

@@ -7,6 +7,17 @@ export const SLOTS = [
 
 const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 
+// Grams-equivalent per unit of quantity, used to convert any unit to the gram basis
+// that calories_per_100g etc. are expressed in. "pièce" is intentionally excluded:
+// its real weight varies per ingredient (an egg vs. a lemon), so no generic factor
+// exists for it — it's treated as already being a direct multiplier (1:1).
+export const UNIT_GRAM_EQUIVALENTS = {
+  g: 1,
+  ml: 1, // reasonable default assuming water-like density
+  cs: 15, // 1 cuillère à soupe ≈ 15 g
+  cc: 5, // 1 cuillère à café ≈ 5 g
+}
+
 export function toISODate(d) {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -55,7 +66,8 @@ export function formatWeekRange(monday) {
 export function mealMacros(ingredients) {
   return ingredients.reduce(
     (acc, ing) => {
-      const factor = (Number(ing.quantity) || 0) / 100
+      const gramsEquivalent = (Number(ing.quantity) || 0) * (UNIT_GRAM_EQUIVALENTS[ing.unit] ?? 1)
+      const factor = gramsEquivalent / 100
       acc.calories += (Number(ing.calories_per_100g) || 0) * factor
       acc.protein += (Number(ing.protein_per_100g) || 0) * factor
       acc.carbs += (Number(ing.carbs_per_100g) || 0) * factor
