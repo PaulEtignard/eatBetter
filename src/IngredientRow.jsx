@@ -9,7 +9,7 @@ export default function IngredientRow({ ingredient, onChange, onRemove }) {
   const [loading, setLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [showManualMacros, setShowManualMacros] = useState(false)
-  const skipNextSearch = useRef(false)
+  const skipNextSearch = useRef(true) // skip the initial mount so editing an existing recipe doesn't auto-trigger a lookup
   const debounceRef = useRef(null)
 
   // Debounced live search: fires ~600ms after the user stops typing
