@@ -603,6 +603,19 @@ button {
   color: var(--chalk-dim);
   white-space: nowrap;
 }
+.autocomplete-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: var(--sage);
+  padding: 1px 6px;
+  border-radius: 10px;
+  vertical-align: middle;
+}
 .autocomplete-list button:hover .autocomplete-kcal {
   color: #10201a;
 }

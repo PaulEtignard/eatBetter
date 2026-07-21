@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { searchOpenFoodFacts } from './openFoodFacts'
+import { searchIngredientMacros } from './openFoodFacts'
 import { round } from './utils'
 
 const DEBOUNCE_MS = 600
@@ -31,7 +31,7 @@ export default function IngredientRow({ ingredient, onChange, onRemove }) {
     setLoading(true)
     debounceRef.current = setTimeout(async () => {
       try {
-        const results = await searchOpenFoodFacts(term)
+        const results = await searchIngredientMacros(term)
         setSuggestions(results)
         setShowSuggestions(results.length > 0)
       } catch {
@@ -79,13 +79,16 @@ export default function IngredientRow({ ingredient, onChange, onRemove }) {
           {showSuggestions && (
             <ul className="autocomplete-list">
               {suggestions.map((s, idx) => (
-                <li key={s.code || idx}>
+                <li key={s.code || `${s.source}-${idx}`}>
                   <button
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => selectSuggestion(s)}
                   >
-                    <span className="autocomplete-name">{s.name}</span>
+                    <span className="autocomplete-name">
+                      {s.name}
+                      {s.source === 'local' && <span className="autocomplete-badge">aliment brut</span>}
+                    </span>
                     <span className="autocomplete-kcal">{round(s.calories_per_100g)} kcal/100g</span>
                   </button>
                 </li>
