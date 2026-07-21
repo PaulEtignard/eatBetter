@@ -9,6 +9,7 @@ import WeekCalendar from './WeekCalendar'
 import MealEditor from './MealEditor'
 import ShoppingList from './ShoppingList'
 import GenerateMenuModal from './GenerateMenuModal'
+import { cacheIngredientMacros } from './openFoodFacts'
 import { getMonday, getWeekDays, addDays, formatWeekRange, toISODate, mealMacros } from './utils'
 
 const SLOT_COLORS = {
@@ -203,6 +204,7 @@ export default function App() {
     if (rows.length) {
       const { error: insErr } = await supabase.from('meal_ingredients').insert(rows)
       if (insErr) throw insErr
+      cacheIngredientMacros(ingredients) // fire-and-forget: don't block saving on this
     }
 
     setEditorState(null)
@@ -509,6 +511,7 @@ export default function App() {
           console.error('[handleGenerateMenu] ingredients insert failed:', ingErr)
           throw ingErr
         }
+        cacheIngredientMacros(ingredientRows.map((r) => ({ ...r, source: 'ai' })))
       }
     }
 

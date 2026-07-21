@@ -56,7 +56,11 @@ export default function IngredientRow({ ingredient, onChange, onRemove }) {
       carbs_per_100g: s.carbs_per_100g ?? '',
       fat_per_100g: s.fat_per_100g ?? '',
       off_code: s.code || null,
+      source: s.source || null,
     })
+    // AI-sourced values are estimates and can hallucinate: surface the editable fields
+    // immediately so the person can eyeball and correct them right away if needed.
+    if (s.source === 'ai') setShowManualMacros(true)
   }
 
   const hasMacros = ingredient.calories_per_100g !== '' && ingredient.calories_per_100g != null
@@ -89,6 +93,10 @@ export default function IngredientRow({ ingredient, onChange, onRemove }) {
                       {s.name}
                       {s.source === 'local' && <span className="autocomplete-badge">aliment brut</span>}
                       {s.source === 'ai' && <span className="autocomplete-badge badge-ai">estimation IA</span>}
+                      {s.source === 'cached-ai' && (
+                        <span className="autocomplete-badge badge-ai">IA (déjà vue)</span>
+                      )}
+                      {s.source === 'cached' && <span className="autocomplete-badge">déjà vue</span>}
                     </span>
                     <span className="autocomplete-kcal">{round(s.calories_per_100g)} kcal/100g</span>
                   </button>
