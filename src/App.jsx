@@ -219,6 +219,13 @@ export default function App() {
     await loadData()
   }
 
+  function friendlyPlacementError(error) {
+    if (error.code === '23505') {
+      return 'Ce créneau est déjà occupé pour cette personne. Retire ou déplace le repas existant avant d\'en ajouter un autre.'
+    }
+    return error.message
+  }
+
   async function handleDropOnSlot(payload, iso, slotKey) {
     const userId = session.user.id
     if (payload.type === 'library') {
@@ -231,7 +238,7 @@ export default function App() {
         slot: slotKey,
       })
       if (error) {
-        setErrorMsg(error.message)
+        setErrorMsg(friendlyPlacementError(error))
         return
       }
     } else if (payload.type === 'placed') {
@@ -240,7 +247,7 @@ export default function App() {
         .update({ plan_date: iso, slot: slotKey })
         .eq('id', payload.plannedMealId)
       if (error) {
-        setErrorMsg(error.message)
+        setErrorMsg(friendlyPlacementError(error))
         return
       }
     }
@@ -266,7 +273,7 @@ export default function App() {
       slot: placement.slot,
     })
     if (error) {
-      setErrorMsg(error.message)
+      setErrorMsg(friendlyPlacementError(error))
       return
     }
     await loadData()
@@ -330,10 +337,15 @@ export default function App() {
 
     // Slots already occupied by this member's own placements: the AI still invents/creates
     // recipes for every day+slot (so the library grows), but we won't place a new meal on
-    // top of a cell this member has already filled in.
-    const occupiedKeys = new Set(
-      plannedMeals.filter((p) => p.member_id === memberId).map((p) => `${p.plan_date}__${p.slot}`)
-    )
+    // top of a cell this member has already filled in. Query fresh instead of trusting
+    // React state, which could be stale if this runs right after another change.
+    const { data: freshPlanned, error: freshErr } = await supabase
+      .from('planned_meals')
+      .select('plan_date, slot, member_id')
+      .eq('member_id', memberId)
+    if (freshErr) throw freshErr
+    const occupiedKeys = new Set(freshPlanned.map((p) => `${p.plan_date}__${p.slot}`))
+    console.log('[handleGenerateMenu] occupied cells for this member:', occupiedKeys.size)
 
     // Generate one day at a time: a full week in one request risks exceeding the
     // serverless function's execution time limit and failing silently.
@@ -509,16 +521,20 @@ export default function App() {
     })
 
     // 2. Bulk place each meal on its target day/slot, for the chosen member —
-    // skipping any cell that member has already filled in
+    // skipping any cell that member has already filled in, and de-duplicating
+    // within this batch as a safety net (e.g. if the AI ever returns two meals
+    // for the same slot in one day)
     const skippedMeals = []
     const placementRows = []
+    const placedKeysThisRun = new Set()
     flatMeals.forEach((m) => {
       const iso = toISODate(addDays(weekMonday, m.dayIndex))
       const key = `${iso}__${m.slot}`
-      if (occupiedKeys.has(key)) {
+      if (occupiedKeys.has(key) || placedKeysThisRun.has(key)) {
         skippedMeals.push(m)
         return
       }
+      placedKeysThisRun.add(key)
       placementRows.push({
         user_id: userId,
         household_id: household.id,
