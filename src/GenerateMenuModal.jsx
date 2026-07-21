@@ -11,6 +11,7 @@ export default function GenerateMenuModal({ members, onCancel, onGenerate }) {
   const [selectedSlots, setSelectedSlots] = useState(['breakfast', 'lunch', 'dinner'])
   const [preferences, setPreferences] = useState('')
   const [loading, setLoading] = useState(false)
+  const [progress, setProgress] = useState('')
   const [error, setError] = useState('')
 
   function handleMemberChange(id) {
@@ -40,21 +41,26 @@ export default function GenerateMenuModal({ members, onCancel, onGenerate }) {
     }
     setLoading(true)
     setError('')
+    setProgress('Préparation…')
     try {
-      await onGenerate({
-        memberId,
-        days,
-        dailyCalories: Number(dailyCalories),
-        dailyProtein: Number(dailyProtein),
-        dailyCarbs: dailyCarbs ? Number(dailyCarbs) : null,
-        dailyFat: dailyFat ? Number(dailyFat) : null,
-        slots: SLOTS.filter((s) => selectedSlots.includes(s.key)).map((s) => s.key),
-        preferences: preferences.trim(),
-      })
+      await onGenerate(
+        {
+          memberId,
+          days,
+          dailyCalories: Number(dailyCalories),
+          dailyProtein: Number(dailyProtein),
+          dailyCarbs: dailyCarbs ? Number(dailyCarbs) : null,
+          dailyFat: dailyFat ? Number(dailyFat) : null,
+          slots: SLOTS.filter((s) => selectedSlots.includes(s.key)).map((s) => s.key),
+          preferences: preferences.trim(),
+        },
+        (msg) => setProgress(msg)
+      )
     } catch (err) {
       setError(err.message || "La génération a échoué. Réessaie dans un instant.")
     } finally {
       setLoading(false)
+      setProgress('')
     }
   }
 
@@ -173,7 +179,7 @@ export default function GenerateMenuModal({ members, onCancel, onGenerate }) {
 
             {loading && (
               <p className="generate-loading">
-                Génération en cours… ça peut prendre 30 à 60 secondes pour une semaine complète.
+                {progress || 'Génération en cours…'} (environ 5-10 secondes par jour)
               </p>
             )}
           </div>

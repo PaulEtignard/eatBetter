@@ -97,7 +97,7 @@ Rappel : un repas qui réutilise une recette existante n'a PAS besoin du champ "
         model: 'openai/gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.5,
-        max_tokens: 6000,
+        max_tokens: Math.min(6000, days * 900 + 400),
         response_format: { type: 'json_object' },
       }),
     })

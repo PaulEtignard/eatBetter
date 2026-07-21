@@ -301,7 +301,7 @@ export default function App() {
     setEditorState(meal)
   }
 
-  async function handleGenerateMenu(params) {
+  async function handleGenerateMenu(params, onProgress) {
     // Give the AI a compact summary of existing household recipes so it can reuse them
     const existingMeals = meals.map((m) => ({
       name: m.name,
@@ -309,28 +309,57 @@ export default function App() {
       calories: Math.round(mealMacros(m.ingredients).calories),
     }))
 
-    const res = await fetch('/api/generate-menu', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...params, existingMeals }),
-    })
-    const data = await res.json()
-
-    if (data.error === 'missing_api_key') {
-      throw new Error(
-        "La clé OpenRouter n'est pas configurée côté serveur (variable OPENROUTER_API_KEY manquante sur Vercel)."
-      )
-    }
-    if (data.error || !Array.isArray(data.days)) {
-      throw new Error("L'IA n'a pas réussi à générer un menu valide. Réessaie.")
-    }
-
     const userId = session.user.id
     const memberId = params.memberId
+    const totalDays = params.days
+
+    // Generate one day at a time: a full week in one request risks exceeding the
+    // serverless function's execution time limit and failing silently.
+    const allDayResults = []
+    for (let i = 0; i < totalDays; i += 1) {
+      if (onProgress) onProgress(`Génération du jour ${i + 1} / ${totalDays}…`)
+
+      const res = await fetch('/api/generate-menu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          days: 1,
+          dailyCalories: params.dailyCalories,
+          dailyProtein: params.dailyProtein,
+          dailyCarbs: params.dailyCarbs,
+          dailyFat: params.dailyFat,
+          slots: params.slots,
+          preferences: params.preferences,
+          existingMeals,
+        }),
+      })
+
+      let data
+      try {
+        data = await res.json()
+      } catch {
+        throw new Error(
+          `Le serveur n'a pas répondu correctement pour le jour ${i + 1} (délai dépassé ou erreur réseau). Réessaie.`
+        )
+      }
+
+      if (data.error === 'missing_api_key') {
+        throw new Error(
+          "La clé OpenRouter n'est pas configurée côté serveur (variable OPENROUTER_API_KEY manquante sur Vercel)."
+        )
+      }
+      if (data.error || !Array.isArray(data.days) || data.days.length === 0) {
+        throw new Error(`L'IA n'a pas réussi à générer le jour ${i + 1}. Réessaie.`)
+      }
+
+      allDayResults.push(data.days[0])
+    }
+
+    if (onProgress) onProgress('Enregistrement du menu…')
 
     // Flatten every generated meal across all days into one list
     const flatMeals = []
-    data.days.forEach((day, dayIndex) => {
+    allDayResults.forEach((day, dayIndex) => {
       ;(day.meals || []).forEach((meal) => {
         flatMeals.push({
           dayIndex,
