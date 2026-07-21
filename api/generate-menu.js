@@ -22,6 +22,7 @@ export default async function handler(req, res) {
     dailyFat,
     slots = ['breakfast', 'lunch', 'dinner'],
     preferences = '',
+    existingMeals = [],
   } = req.body || {}
 
   if (!dailyCalories || !dailyProtein) {
@@ -46,10 +47,22 @@ export default async function handler(req, res) {
     .filter(Boolean)
     .join(', ')
 
+  const existingList = existingMeals
+    .slice(0, 60)
+    .map((m) => `- "${m.name}" (${m.category || 'tous types'}, ${m.calories} kcal/portion)`)
+    .join('\n')
+
+  const reuseInstructions = existingList
+    ? `Recettes déjà existantes dans le foyer, à réutiliser en priorité quand elles conviennent au repas et aux objectifs (économise du travail de génération) :
+${existingList}
+Pour un repas qui réutilise une recette EXACTEMENT telle quelle, réponds pour ce repas avec {"slot": "...", "reuse": "Nom exact de la recette existante"} au lieu du champ "ingredients". N'utilise "reuse" que si le nom correspond EXACTEMENT à une recette listée ci-dessus.`
+    : ''
+
   const prompt = `Tu es un nutritionniste qui construit un plan de repas pour ${days} jours consécutifs.
 Objectif nutritionnel PAR JOUR (à répartir sur l'ensemble des repas du jour, tolérance +/-8%) : ${macroLine}.
 Repas à générer chaque jour, dans cet ordre : ${slotList}.
 ${preferences ? `Préférences/contraintes à respecter impérativement : ${preferences}.` : ''}
+${reuseInstructions}
 Varie les recettes d'un jour à l'autre (ne répète pas le même repas plus de 2 fois sur la semaine). Cuisine familiale simple et réaliste, ingrédients courants, quantités en grammes (ou ml/pièce quand pertinent) réalistes pour une portion.
 
 Réponds STRICTEMENT avec un objet JSON valide, sans texte autour, sans balises markdown, au format exact :
@@ -68,7 +81,8 @@ Réponds STRICTEMENT avec un objet JSON valide, sans texte autour, sans balises 
     }
   ]
 }
-Le tableau "days" doit contenir exactement ${days} éléments, dans l'ordre chronologique. Les valeurs de macros par 100g doivent être des estimations nutritionnelles réalistes pour chaque ingrédient. L'unité doit être une de: g, ml, pièce, cs, cc.`
+Le tableau "days" doit contenir exactement ${days} éléments, dans l'ordre chronologique. Les valeurs de macros par 100g doivent être des estimations nutritionnelles réalistes pour chaque ingrédient. L'unité doit être une de: g, ml, pièce, cs, cc.
+Rappel : un repas qui réutilise une recette existante n'a PAS besoin du champ "ingredients", juste {"slot": "...", "reuse": "Nom exact"}.`
 
   try {
     const aiRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {

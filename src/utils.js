@@ -69,3 +69,10 @@ export function mealMacros(ingredients) {
 export function round(n) {
   return Math.round(n * 10) / 10
 }
+
+// Merges base recipe ingredients with per-placement quantity overrides (per-person portions)
+export function applyOverrides(ingredients, overrides) {
+  if (!overrides || overrides.length === 0) return ingredients
+  const overrideMap = new Map(overrides.map((o) => [o.meal_ingredient_id, o.quantity]))
+  return ingredients.map((ing) => (overrideMap.has(ing.id) ? { ...ing, quantity: overrideMap.get(ing.id) } : ing))
+}

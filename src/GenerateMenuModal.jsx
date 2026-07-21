@@ -1,16 +1,28 @@
 import { useState } from 'react'
 import { SLOTS } from './utils'
 
-export default function GenerateMenuModal({ onCancel, onGenerate }) {
-  const [dailyCalories, setDailyCalories] = useState(2200)
-  const [dailyProtein, setDailyProtein] = useState(150)
-  const [dailyCarbs, setDailyCarbs] = useState('')
-  const [dailyFat, setDailyFat] = useState('')
+export default function GenerateMenuModal({ members, onCancel, onGenerate }) {
+  const [memberId, setMemberId] = useState(members[0]?.id || '')
+  const [dailyCalories, setDailyCalories] = useState(members[0]?.daily_calories_target || 2200)
+  const [dailyProtein, setDailyProtein] = useState(members[0]?.daily_protein_target || 150)
+  const [dailyCarbs, setDailyCarbs] = useState(members[0]?.daily_carbs_target || '')
+  const [dailyFat, setDailyFat] = useState(members[0]?.daily_fat_target || '')
   const [days, setDays] = useState(7)
   const [selectedSlots, setSelectedSlots] = useState(['breakfast', 'lunch', 'dinner'])
   const [preferences, setPreferences] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  function handleMemberChange(id) {
+    setMemberId(id)
+    const m = members.find((mm) => mm.id === id)
+    if (m) {
+      setDailyCalories(m.daily_calories_target || 2200)
+      setDailyProtein(m.daily_protein_target || 150)
+      setDailyCarbs(m.daily_carbs_target || '')
+      setDailyFat(m.daily_fat_target || '')
+    }
+  }
 
   function toggleSlot(key) {
     setSelectedSlots((prev) => (prev.includes(key) ? prev.filter((s) => s !== key) : [...prev, key]))
@@ -22,10 +34,15 @@ export default function GenerateMenuModal({ onCancel, onGenerate }) {
       setError('Sélectionne au moins un type de repas.')
       return
     }
+    if (!memberId) {
+      setError('Choisis pour qui générer ce menu.')
+      return
+    }
     setLoading(true)
     setError('')
     try {
       await onGenerate({
+        memberId,
         days,
         dailyCalories: Number(dailyCalories),
         dailyProtein: Number(dailyProtein),
@@ -57,8 +74,20 @@ export default function GenerateMenuModal({ onCancel, onGenerate }) {
           <div className="modal-body">
             <p className="generate-intro">
               Donne tes objectifs quotidiens, l'IA construit des repas complets (avec ingrédients et
-              quantités) pour toute la semaine et les place directement sur ton calendrier.
+              quantités) pour toute la semaine et les place directement sur le calendrier — en réutilisant si
+              possible des recettes déjà dans le foyer.
             </p>
+
+            <label className="field">
+              Générer le menu pour
+              <select value={memberId} onChange={(e) => handleMemberChange(e.target.value)}>
+                {members.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.display_name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <div className="macro-target-grid">
               <label className="field">

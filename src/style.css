@@ -180,6 +180,94 @@ button {
   cursor: pointer;
   font-size: 0.85rem;
 }
+.portion-subtitle {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: var(--chalk-dim);
+}
+.portion-ingredients {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.portion-ingredient-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 50px;
+  gap: 8px;
+  align-items: center;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.portion-ingredient-name {
+  font-size: 0.85rem;
+}
+.portion-ingredient-row input {
+  background: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: var(--chalk);
+  font-size: 0.85rem;
+}
+.portion-ingredient-unit {
+  font-size: 0.75rem;
+  color: var(--chalk-dim);
+}
+
+.household-invite-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.household-invite-hint {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--chalk-dim);
+  line-height: 1.4;
+  max-width: 340px;
+}
+.household-members-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.household-member-chip {
+  background: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  color: var(--chalk-dim);
+}
+
+.household-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.household-tab {
+  flex: 1;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px;
+  color: var(--chalk-dim);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.household-tab.is-active {
+  background: var(--citrus);
+  border-color: var(--citrus);
+  color: #241a02;
+}
 
 .full-screen-center {
   display: flex;
@@ -403,31 +491,80 @@ button {
   flex-direction: column;
   gap: 2px;
 }
+.placed-meal-card.is-mine {
+  box-shadow: inset 0 0 0 1px rgba(232, 185, 48, 0.35);
+}
 .placed-meal-card:active {
   cursor: grabbing;
+}
+.placed-meal-member {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--sage);
+  font-weight: 700;
 }
 .placed-meal-name {
   font-size: 0.8rem;
   font-weight: 600;
-  padding-right: 16px;
+  padding-right: 32px;
 }
 .placed-meal-kcal {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
   color: var(--chalk-dim);
 }
-.placed-meal-remove {
+.placed-meal-actions {
   position: absolute;
   top: 4px;
   right: 4px;
+  display: flex;
+  gap: 2px;
+}
+.placed-meal-dup,
+.placed-meal-remove {
   background: none;
   border: none;
   color: var(--chalk-dim);
   cursor: pointer;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
+  line-height: 1;
+  padding: 2px;
+}
+.placed-meal-dup:hover {
+  color: var(--sage);
 }
 .placed-meal-remove:hover {
   color: var(--tomato);
+}
+.duplicate-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 10;
+  background: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 110px;
+}
+.duplicate-menu button {
+  background: transparent;
+  border: none;
+  color: var(--chalk);
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+.duplicate-menu button:hover {
+  background: var(--sage);
+  color: #10201a;
 }
 
 /* ---------- Modal ---------- */

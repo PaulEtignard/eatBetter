@@ -1,26 +1,44 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { supabase } from './supabaseClient'
 import Auth from './Auth'
+import HouseholdGate from './HouseholdGate'
+import ProfileModal from './ProfileModal'
+import PortionEditor from './PortionEditor'
 import MealLibrary from './MealLibrary'
 import WeekCalendar from './WeekCalendar'
 import MealEditor from './MealEditor'
 import ShoppingList from './ShoppingList'
 import GenerateMenuModal from './GenerateMenuModal'
-import { getMonday, getWeekDays, addDays, formatWeekRange, toISODate } from './utils'
+import { getMonday, getWeekDays, addDays, formatWeekRange, toISODate, mealMacros } from './utils'
+
+const SLOT_COLORS = {
+  breakfast: '#e8b930',
+  lunch: '#5b7a9d',
+  snack: '#8fa998',
+  dinner: '#c1502e',
+}
 
 export default function App() {
   const [session, setSession] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
 
+  const [household, setHousehold] = useState(null)
+  const [currentMember, setCurrentMember] = useState(null)
+  const [members, setMembers] = useState([])
+  const [householdLoading, setHouseholdLoading] = useState(true)
+
   const [meals, setMeals] = useState([])
   const [plannedMeals, setPlannedMeals] = useState([])
+  const [overrides, setOverrides] = useState([])
   const [dataLoading, setDataLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
 
   const [weekMonday, setWeekMonday] = useState(() => getMonday(new Date()))
   const [editorState, setEditorState] = useState(null) // null | 'new' | meal object
+  const [portionState, setPortionState] = useState(null) // null | { placement, meal }
   const [showShoppingList, setShowShoppingList] = useState(false)
   const [showGenerateMenu, setShowGenerateMenu] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
   const [dragOverKey, setDragOverKey] = useState(null)
 
   useEffect(() => {
@@ -34,14 +52,60 @@ export default function App() {
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  const loadData = useCallback(async () => {
+  const loadHousehold = useCallback(async () => {
     if (!session) return
+    setHouseholdLoading(true)
+    try {
+      const { data: memberRow, error: memberErr } = await supabase
+        .from('household_members')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+      if (memberErr) throw memberErr
+
+      if (!memberRow) {
+        setCurrentMember(null)
+        setHousehold(null)
+        setMembers([])
+        return
+      }
+
+      const { data: householdRow, error: hErr } = await supabase
+        .from('households')
+        .select('*')
+        .eq('id', memberRow.household_id)
+        .single()
+      if (hErr) throw hErr
+
+      const { data: allMembers, error: membersErr } = await supabase
+        .from('household_members')
+        .select('*')
+        .eq('household_id', memberRow.household_id)
+        .order('created_at', { ascending: true })
+      if (membersErr) throw membersErr
+
+      setCurrentMember(memberRow)
+      setHousehold(householdRow)
+      setMembers(allMembers || [])
+    } catch (err) {
+      setErrorMsg(err.message || 'Erreur de chargement du foyer')
+    } finally {
+      setHouseholdLoading(false)
+    }
+  }, [session])
+
+  useEffect(() => {
+    loadHousehold()
+  }, [loadHousehold])
+
+  const loadData = useCallback(async () => {
+    if (!household) return
     setDataLoading(true)
     setErrorMsg('')
     try {
       const { data: mealsData, error: mealsErr } = await supabase
         .from('meals')
-        .select('id, name, notes, color, category, meal_ingredients(*)')
+        .select('id, name, notes, color, category, ai_generated, meal_ingredients(*)')
         .order('created_at', { ascending: false })
       if (mealsErr) throw mealsErr
 
@@ -51,21 +115,28 @@ export default function App() {
         notes: m.notes,
         color: m.color,
         category: m.category,
+        ai_generated: m.ai_generated,
         ingredients: (m.meal_ingredients || []).sort((a, b) => a.position - b.position),
       }))
       setMeals(normalized)
 
       const { data: plannedData, error: plannedErr } = await supabase
         .from('planned_meals')
-        .select('id, meal_id, plan_date, slot, position')
+        .select('id, meal_id, member_id, plan_date, slot, position')
       if (plannedErr) throw plannedErr
       setPlannedMeals(plannedData || [])
+
+      const { data: overrideData, error: overrideErr } = await supabase
+        .from('planned_meal_ingredient_overrides')
+        .select('id, planned_meal_id, meal_ingredient_id, quantity')
+      if (overrideErr) throw overrideErr
+      setOverrides(overrideData || [])
     } catch (err) {
       setErrorMsg(err.message || 'Erreur de chargement')
     } finally {
       setDataLoading(false)
     }
-  }, [session])
+  }, [household])
 
   useEffect(() => {
     loadData()
@@ -73,6 +144,16 @@ export default function App() {
 
   const weekDays = useMemo(() => getWeekDays(weekMonday), [weekMonday])
   const mealsById = useMemo(() => Object.fromEntries(meals.map((m) => [m.id, m])), [meals])
+  const membersById = useMemo(() => Object.fromEntries(members.map((m) => [m.id, m])), [members])
+
+  const overridesByPlacementId = useMemo(() => {
+    const map = {}
+    overrides.forEach((o) => {
+      if (!map[o.planned_meal_id]) map[o.planned_meal_id] = []
+      map[o.planned_meal_id].push(o)
+    })
+    return map
+  }, [overrides])
 
   const placementsByDayAndSlot = useMemo(() => {
     const map = {}
@@ -96,7 +177,7 @@ export default function App() {
     } else {
       const { data, error } = await supabase
         .from('meals')
-        .insert({ name, notes, color, category, user_id: userId })
+        .insert({ name, notes, color, category, user_id: userId, household_id: household.id })
         .select()
         .single()
       if (error) throw error
@@ -142,6 +223,8 @@ export default function App() {
     if (payload.type === 'library') {
       const { error } = await supabase.from('planned_meals').insert({
         user_id: userId,
+        household_id: household.id,
+        member_id: currentMember.id,
         meal_id: payload.mealId,
         plan_date: iso,
         slot: slotKey,
@@ -172,18 +255,64 @@ export default function App() {
     await loadData()
   }
 
-  const SLOT_COLORS = {
-    breakfast: '#e8b930',
-    lunch: '#5b7a9d',
-    snack: '#8fa998',
-    dinner: '#c1502e',
+  async function handleDuplicateForMember(placement, memberId) {
+    const { error } = await supabase.from('planned_meals').insert({
+      user_id: session.user.id,
+      household_id: household.id,
+      member_id: memberId,
+      meal_id: placement.meal_id,
+      plan_date: placement.plan_date,
+      slot: placement.slot,
+    })
+    if (error) {
+      setErrorMsg(error.message)
+      return
+    }
+    await loadData()
+  }
+
+  function handleOpenPortion(placement, meal) {
+    setPortionState({ placement, meal })
+  }
+
+  async function handleSavePortion(overrideList) {
+    const { placement } = portionState
+    const { error: delErr } = await supabase
+      .from('planned_meal_ingredient_overrides')
+      .delete()
+      .eq('planned_meal_id', placement.id)
+    if (delErr) throw delErr
+
+    if (overrideList.length > 0) {
+      const rows = overrideList.map((o) => ({
+        household_id: household.id,
+        planned_meal_id: placement.id,
+        meal_ingredient_id: o.meal_ingredient_id,
+        quantity: o.quantity,
+      }))
+      const { error: insErr } = await supabase.from('planned_meal_ingredient_overrides').insert(rows)
+      if (insErr) throw insErr
+    }
+    await loadData()
+  }
+
+  function handleEditRecipeFromPortion(meal) {
+    setPortionState(null)
+    setEditorState(meal)
   }
 
   async function handleGenerateMenu(params) {
+    // Give the AI a compact summary of existing household recipes so it can reuse them
+    const existingMeals = meals.map((m) => ({
+      name: m.name,
+      category: m.category,
+      calories: Math.round(mealMacros(m.ingredients).calories),
+    }))
+
     const res = await fetch('/api/generate-menu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify({ ...params, existingMeals }),
     })
     const data = await res.json()
 
@@ -197,6 +326,7 @@ export default function App() {
     }
 
     const userId = session.user.id
+    const memberId = params.memberId
 
     // Flatten every generated meal across all days into one list
     const flatMeals = []
@@ -206,6 +336,7 @@ export default function App() {
           dayIndex,
           slot: meal.slot,
           name: meal.name,
+          reuse: meal.reuse || null,
           ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
         })
       })
@@ -215,44 +346,72 @@ export default function App() {
       throw new Error("L'IA n'a généré aucun repas.")
     }
 
-    // 1. Bulk create the meal rows
-    const mealRows = flatMeals.map((m) => ({
-      user_id: userId,
-      name: m.name,
-      color: SLOT_COLORS[m.slot] || '#e8b930',
-      category: m.slot,
-    }))
-    const { data: insertedMeals, error: mealsErr } = await supabase.from('meals').insert(mealRows).select()
-    if (mealsErr) throw mealsErr
+    // Resolve "reuse" entries against the existing household recipe library by name
+    const mealByLowerName = new Map(meals.map((m) => [m.name.trim().toLowerCase(), m]))
+    const toCreate = []
+    const resolved = flatMeals.map((m) => {
+      if (m.reuse) {
+        const existing = mealByLowerName.get(m.reuse.trim().toLowerCase())
+        if (existing) return { ...m, existingMealId: existing.id }
+      }
+      toCreate.push(m)
+      return m
+    })
 
-    // 2. Bulk create ingredient rows for all meals at once
-    const ingredientRows = []
-    flatMeals.forEach((m, idx) => {
-      const mealId = insertedMeals[idx].id
-      m.ingredients.forEach((ing, position) => {
-        if (!ing.name || !ing.name.trim()) return
-        ingredientRows.push({
-          meal_id: mealId,
-          name: ing.name.trim(),
-          quantity: Number(ing.quantity) || 0,
-          unit: ing.unit || 'g',
-          calories_per_100g: ing.calories_per_100g != null ? Number(ing.calories_per_100g) : null,
-          protein_per_100g: ing.protein_per_100g != null ? Number(ing.protein_per_100g) : null,
-          carbs_per_100g: ing.carbs_per_100g != null ? Number(ing.carbs_per_100g) : null,
-          fat_per_100g: ing.fat_per_100g != null ? Number(ing.fat_per_100g) : null,
-          position,
+    // 1. Bulk create only the genuinely new meal rows
+    let insertedMeals = []
+    if (toCreate.length > 0) {
+      const mealRows = toCreate.map((m) => ({
+        user_id: userId,
+        household_id: household.id,
+        name: m.name,
+        color: SLOT_COLORS[m.slot] || '#e8b930',
+        category: m.slot,
+        ai_generated: true,
+      }))
+      const { data: created, error: mealsErr } = await supabase.from('meals').insert(mealRows).select()
+      if (mealsErr) throw mealsErr
+      insertedMeals = created
+
+      const ingredientRows = []
+      toCreate.forEach((m, idx) => {
+        const mealId = insertedMeals[idx].id
+        m.ingredients.forEach((ing, position) => {
+          if (!ing.name || !ing.name.trim()) return
+          ingredientRows.push({
+            meal_id: mealId,
+            name: ing.name.trim(),
+            quantity: Number(ing.quantity) || 0,
+            unit: ing.unit || 'g',
+            calories_per_100g: ing.calories_per_100g != null ? Number(ing.calories_per_100g) : null,
+            protein_per_100g: ing.protein_per_100g != null ? Number(ing.protein_per_100g) : null,
+            carbs_per_100g: ing.carbs_per_100g != null ? Number(ing.carbs_per_100g) : null,
+            fat_per_100g: ing.fat_per_100g != null ? Number(ing.fat_per_100g) : null,
+            position,
+          })
         })
       })
-    })
-    if (ingredientRows.length > 0) {
-      const { error: ingErr } = await supabase.from('meal_ingredients').insert(ingredientRows)
-      if (ingErr) throw ingErr
+      if (ingredientRows.length > 0) {
+        const { error: ingErr } = await supabase.from('meal_ingredients').insert(ingredientRows)
+        if (ingErr) throw ingErr
+      }
     }
 
-    // 3. Bulk place each meal on its target day/slot
-    const placementRows = flatMeals.map((m, idx) => ({
+    // Map each newly created meal back to its flat entry
+    let createIdx = 0
+    const finalMealIds = resolved.map((m) => {
+      if (m.existingMealId) return m.existingMealId
+      const id = insertedMeals[createIdx].id
+      createIdx += 1
+      return id
+    })
+
+    // 2. Bulk place each meal on its target day/slot, for the chosen member
+    const placementRows = resolved.map((m, idx) => ({
       user_id: userId,
-      meal_id: insertedMeals[idx].id,
+      household_id: household.id,
+      member_id: memberId,
+      meal_id: finalMealIds[idx],
       plan_date: toISODate(addDays(weekMonday, m.dayIndex)),
       slot: m.slot,
     }))
@@ -263,12 +422,16 @@ export default function App() {
     await loadData()
   }
 
-  if (authLoading) {
+  if (authLoading || (session && householdLoading)) {
     return <div className="full-screen-center">Chargement…</div>
   }
 
   if (!session) {
     return <Auth />
+  }
+
+  if (!currentMember || !household) {
+    return <HouseholdGate session={session} onReady={loadHousehold} />
   }
 
   return (
@@ -291,6 +454,9 @@ export default function App() {
           </button>
         </div>
         <div className="header-actions">
+          <button className="btn btn-ghost btn-small" onClick={() => setShowProfile(true)}>
+            👤 {currentMember.display_name}
+          </button>
           <button className="btn btn-secondary btn-small" onClick={() => setShowShoppingList(true)}>
             🛒 Liste de courses
           </button>
@@ -317,9 +483,14 @@ export default function App() {
             weekDays={weekDays}
             placementsByDayAndSlot={placementsByDayAndSlot}
             mealsById={mealsById}
+            membersById={membersById}
+            members={members}
+            currentMemberId={currentMember.id}
+            overridesByPlacementId={overridesByPlacementId}
             onDropOnSlot={handleDropOnSlot}
-            onOpenMeal={(meal) => setEditorState(meal)}
+            onOpenPortion={handleOpenPortion}
             onRemovePlacement={handleRemovePlacement}
+            onDuplicateForMember={handleDuplicateForMember}
             dragOverKey={dragOverKey}
             setDragOverKey={setDragOverKey}
           />
@@ -340,12 +511,39 @@ export default function App() {
           weekDays={weekDays}
           plannedMeals={plannedMeals}
           mealsById={mealsById}
+          overridesByPlacementId={overridesByPlacementId}
           onClose={() => setShowShoppingList(false)}
         />
       )}
 
       {showGenerateMenu && (
-        <GenerateMenuModal onCancel={() => setShowGenerateMenu(false)} onGenerate={handleGenerateMenu} />
+        <GenerateMenuModal
+          members={members}
+          onCancel={() => setShowGenerateMenu(false)}
+          onGenerate={handleGenerateMenu}
+        />
+      )}
+
+      {showProfile && (
+        <ProfileModal
+          member={currentMember}
+          household={household}
+          members={members}
+          onClose={() => setShowProfile(false)}
+          onSaved={loadHousehold}
+        />
+      )}
+
+      {portionState && (
+        <PortionEditor
+          placement={portionState.placement}
+          meal={portionState.meal}
+          memberName={membersById[portionState.placement.member_id]?.display_name || '?'}
+          initialOverrides={overridesByPlacementId[portionState.placement.id] || []}
+          onClose={() => setPortionState(null)}
+          onSave={handleSavePortion}
+          onEditRecipe={handleEditRecipeFromPortion}
+        />
       )}
     </div>
   )

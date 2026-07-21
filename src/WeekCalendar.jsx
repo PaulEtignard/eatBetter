@@ -1,16 +1,23 @@
-import { Fragment } from 'react'
-import { SLOTS, mealMacros, round } from './utils'
+import { Fragment, useState } from 'react'
+import { SLOTS, mealMacros, applyOverrides, round } from './utils'
 
 export default function WeekCalendar({
   weekDays,
   placementsByDayAndSlot,
   mealsById,
+  membersById,
+  members,
+  currentMemberId,
+  overridesByPlacementId,
   onDropOnSlot,
-  onOpenMeal,
+  onOpenPortion,
   onRemovePlacement,
+  onDuplicateForMember,
   dragOverKey,
   setDragOverKey,
 }) {
+  const [duplicateMenuFor, setDuplicateMenuFor] = useState(null)
+
   function handleDragOver(e, key) {
     e.preventDefault()
     if (dragOverKey !== key) setDragOverKey(key)
@@ -29,17 +36,24 @@ export default function WeekCalendar({
     }
   }
 
+  function effectiveMacros(placement, meal) {
+    const overrides = overridesByPlacementId[placement.id] || []
+    return mealMacros(applyOverrides(meal.ingredients, overrides))
+  }
+
   return (
     <div className="calendar-grid">
       <div className="calendar-corner" />
       {weekDays.map((day) => {
         const dayTotals = SLOTS.reduce(
           (acc, slot) => {
-            const placements = placementsByDayAndSlot[day.iso]?.[slot.key] || []
+            const placements = (placementsByDayAndSlot[day.iso]?.[slot.key] || []).filter(
+              (p) => p.member_id === currentMemberId
+            )
             placements.forEach((p) => {
               const meal = mealsById[p.meal_id]
               if (!meal) return
-              const m = mealMacros(meal.ingredients)
+              const m = effectiveMacros(p, meal)
               acc.calories += m.calories
               acc.protein += m.protein
               acc.carbs += m.carbs
@@ -83,11 +97,16 @@ export default function WeekCalendar({
                 {placements.map((p) => {
                   const meal = mealsById[p.meal_id]
                   if (!meal) return null
-                  const macros = mealMacros(meal.ingredients)
+                  const macros = effectiveMacros(p, meal)
+                  const memberName = membersById[p.member_id]?.display_name || '?'
+                  const isMine = p.member_id === currentMemberId
+                  const membersWithoutPlacement = members.filter(
+                    (m) => !placements.some((pl) => pl.member_id === m.id)
+                  )
                   return (
                     <div
                       key={p.id}
-                      className="placed-meal-card"
+                      className={`placed-meal-card ${isMine ? 'is-mine' : ''}`}
                       style={{ borderLeftColor: meal.color }}
                       draggable
                       onDragStart={(e) =>
@@ -96,21 +115,55 @@ export default function WeekCalendar({
                           JSON.stringify({ type: 'placed', plannedMealId: p.id, mealId: meal.id })
                         )
                       }
-                      onClick={() => onOpenMeal(meal)}
+                      onClick={() => onOpenPortion(p, meal)}
                     >
+                      <span className="placed-meal-member">{memberName}</span>
                       <span className="placed-meal-name">{meal.name}</span>
                       <span className="placed-meal-kcal">{round(macros.calories)} kcal</span>
-                      <button
-                        type="button"
-                        className="placed-meal-remove"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onRemovePlacement(p.id)
-                        }}
-                        aria-label="Retirer du planning"
-                      >
-                        ✕
-                      </button>
+                      <div className="placed-meal-actions">
+                        {membersWithoutPlacement.length > 0 && (
+                          <button
+                            type="button"
+                            className="placed-meal-dup"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setDuplicateMenuFor(duplicateMenuFor === p.id ? null : p.id)
+                            }}
+                            aria-label="Ajouter ce repas pour un autre membre"
+                            title="Ajouter pour un autre membre"
+                          >
+                            👤+
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="placed-meal-remove"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onRemovePlacement(p.id)
+                          }}
+                          aria-label="Retirer du planning"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      {duplicateMenuFor === p.id && (
+                        <div className="duplicate-menu" onClick={(e) => e.stopPropagation()}>
+                          {membersWithoutPlacement.map((m) => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => {
+                                setDuplicateMenuFor(null)
+                                onDuplicateForMember(p, m.id)
+                              }}
+                            >
+                              {m.display_name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
                 })}

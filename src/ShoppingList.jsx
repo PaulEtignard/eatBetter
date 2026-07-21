@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { round } from './utils'
+import { applyOverrides, round } from './utils'
 
-export default function ShoppingList({ weekDays, plannedMeals, mealsById, onClose }) {
+export default function ShoppingList({ weekDays, plannedMeals, mealsById, overridesByPlacementId, onClose }) {
   const [checked, setChecked] = useState({})
 
   const items = useMemo(() => {
@@ -12,7 +12,8 @@ export default function ShoppingList({ weekDays, plannedMeals, mealsById, onClos
       .forEach((p) => {
         const meal = mealsById[p.meal_id]
         if (!meal) return
-        meal.ingredients.forEach((ing) => {
+        const effective = applyOverrides(meal.ingredients, overridesByPlacementId?.[p.id])
+        effective.forEach((ing) => {
           const key = `${ing.name.trim().toLowerCase()}__${ing.unit}`
           if (!agg[key]) {
             agg[key] = { name: ing.name.trim(), unit: ing.unit, quantity: 0 }
@@ -21,7 +22,7 @@ export default function ShoppingList({ weekDays, plannedMeals, mealsById, onClos
         })
       })
     return Object.values(agg).sort((a, b) => a.name.localeCompare(b.name, 'fr'))
-  }, [weekDays, plannedMeals, mealsById])
+  }, [weekDays, plannedMeals, mealsById, overridesByPlacementId])
 
   function toggle(name) {
     setChecked((prev) => ({ ...prev, [name]: !prev[name] }))
