@@ -308,6 +308,11 @@ export default function App() {
       return str.trim().toLowerCase()
     }
 
+    // Cap how many times any single recipe (existing or newly invented) can appear across
+    // the whole generated period, so the AI is forced toward variety instead of always
+    // reaching for the same "safe" match once it's in the known-recipes pool.
+    const USAGE_CAP = 2
+
     // Give the AI a compact summary of existing household recipes so it can reuse them.
     // This list grows as the loop below discovers newly-invented recipes, so day 3 knows
     // about recipes invented on day 1 within the SAME generation run.
@@ -316,7 +321,7 @@ export default function App() {
       category: m.category,
       calories: Math.round(mealMacros(m.ingredients).calories),
     }))
-    const knownNames = new Set(knownMeals.map((m) => normalizeName(m.name)))
+    const usageCount = new Map()
 
     const userId = session.user.id
     const memberId = params.memberId
@@ -328,6 +333,11 @@ export default function App() {
     for (let i = 0; i < totalDays; i += 1) {
       if (onProgress) onProgress(`Génération du jour ${i + 1} / ${totalDays}…`)
       console.log(`[generateMenu] requesting day ${i + 1}/${totalDays}…`)
+
+      // Only offer recipes that haven't already hit the reuse cap
+      const availableForReuse = knownMeals.filter(
+        (km) => (usageCount.get(normalizeName(km.name)) || 0) < USAGE_CAP
+      )
 
       let res
       try {
@@ -342,7 +352,7 @@ export default function App() {
             dailyFat: params.dailyFat,
             slots: params.slots,
             preferences: params.preferences,
-            existingMeals: knownMeals,
+            existingMeals: availableForReuse,
           }),
         })
       } catch (networkErr) {
@@ -377,12 +387,12 @@ export default function App() {
       const dayResult = data.days[0]
       allDayResults.push(dayResult)
 
-      // Feed this day's newly-invented recipes into the pool the NEXT day's prompt will see
+      // Track usage and feed newly-invented recipes into the pool for subsequent days
       ;(dayResult.meals || []).forEach((meal) => {
         const effectiveName = meal.reuse || meal.name
         const key = normalizeName(effectiveName)
-        if (!knownNames.has(key)) {
-          knownNames.add(key)
+        usageCount.set(key, (usageCount.get(key) || 0) + 1)
+        if (!knownMeals.some((km) => normalizeName(km.name) === key)) {
           const cal = Array.isArray(meal.ingredients) ? Math.round(mealMacros(meal.ingredients).calories) : 0
           knownMeals.push({ name: effectiveName, category: meal.slot, calories: cal })
         }
