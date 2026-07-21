@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { searchIngredientMacros } from './openFoodFacts'
-import { round, UNIT_GRAM_EQUIVALENTS } from './utils'
+import { round, UNIT_GRAM_EQUIVALENTS, gramsEquivalent } from './utils'
 
 const DEBOUNCE_MS = 600
 
@@ -65,15 +65,29 @@ export default function IngredientRow({ ingredient, onChange, onRemove }) {
 
   function handleUnitChange(newUnit) {
     const oldUnit = ingredient.unit
+    const hasQuantity = ingredient.quantity !== '' && ingredient.quantity != null
+
+    if (newUnit === oldUnit) return
+
+    if (newUnit === 'pièce' && oldUnit !== 'pièce' && hasQuantity) {
+      // Preserve the real mass: "150g" becomes "1 pièce of 150g" instead of "150 pièce"
+      const grams = Math.round(Number(ingredient.quantity) * (UNIT_GRAM_EQUIVALENTS[oldUnit] ?? 1))
+      onChange({ unit: newUnit, quantity: 1, piece_weight_g: grams })
+      return
+    }
+
+    if (oldUnit === 'pièce' && newUnit !== 'pièce' && hasQuantity) {
+      const grams = Number(ingredient.quantity) * (Number(ingredient.piece_weight_g) || 100)
+      const newFactor = UNIT_GRAM_EQUIVALENTS[newUnit] ?? 1
+      onChange({ unit: newUnit, quantity: Math.round((grams / newFactor) * 100) / 100 })
+      return
+    }
+
     const oldFactor = UNIT_GRAM_EQUIVALENTS[oldUnit]
     const newFactor = UNIT_GRAM_EQUIVALENTS[newUnit]
-    // Only convert between units that both have a known grams-equivalent (g/ml/cs/cc).
-    // "pièce" has no generic conversion (an egg and a lemon don't weigh the same), so
-    // switching to/from it just changes the label and leaves the quantity as-is.
-    if (oldFactor && newFactor && ingredient.quantity !== '' && ingredient.quantity != null) {
+    if (oldFactor && newFactor && hasQuantity) {
       const grams = Number(ingredient.quantity) * oldFactor
-      const converted = Math.round((grams / newFactor) * 100) / 100
-      onChange({ unit: newUnit, quantity: converted })
+      onChange({ unit: newUnit, quantity: Math.round((grams / newFactor) * 100) / 100 })
     } else {
       onChange({ unit: newUnit })
     }
@@ -151,6 +165,22 @@ export default function IngredientRow({ ingredient, onChange, onRemove }) {
           🗑
         </button>
       </div>
+
+      {ingredient.unit === 'pièce' && (
+        <div className="piece-weight-row">
+          <span>Poids d'1 pièce</span>
+          <input
+            type="number"
+            min="1"
+            value={ingredient.piece_weight_g ?? 100}
+            onChange={(e) => onChange({ piece_weight_g: e.target.value })}
+          />
+          <span>g</span>
+          <span className="piece-weight-total">
+            = {round(gramsEquivalent(ingredient))} g au total
+          </span>
+        </div>
+      )}
 
       <div className="ingredient-card-footer">
         {hasMacros ? (

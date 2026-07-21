@@ -198,6 +198,7 @@ export default function App() {
         carbs_per_100g: ing.carbs_per_100g === '' ? null : Number(ing.carbs_per_100g),
         fat_per_100g: ing.fat_per_100g === '' ? null : Number(ing.fat_per_100g),
         off_code: ing.off_code || null,
+        piece_weight_g: ing.unit === 'pièce' ? Number(ing.piece_weight_g) || 100 : null,
         position: idx,
       }))
 
@@ -501,6 +502,7 @@ export default function App() {
             protein_per_100g: ing.protein_per_100g != null ? Number(ing.protein_per_100g) : null,
             carbs_per_100g: ing.carbs_per_100g != null ? Number(ing.carbs_per_100g) : null,
             fat_per_100g: ing.fat_per_100g != null ? Number(ing.fat_per_100g) : null,
+            piece_weight_g: ing.unit === 'pièce' ? Number(ing.piece_weight_g) || 100 : null,
             position,
           })
         })

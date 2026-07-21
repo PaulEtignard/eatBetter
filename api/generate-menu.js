@@ -85,7 +85,7 @@ Réponds STRICTEMENT avec un objet JSON valide, sans texte autour, sans balises 
           "slot": "breakfast",
           "name": "Nom du repas",
           "ingredients": [
-            { "name": "Nom de l'ingrédient", "quantity": 100, "unit": "g", "calories_per_100g": 0, "protein_per_100g": 0, "carbs_per_100g": 0, "fat_per_100g": 0 }
+            { "name": "Nom de l'ingrédient", "quantity": 100, "unit": "g", "calories_per_100g": 0, "protein_per_100g": 0, "carbs_per_100g": 0, "fat_per_100g": 0, "piece_weight_g": null }
           ]
         }
       ]
@@ -93,6 +93,7 @@ Réponds STRICTEMENT avec un objet JSON valide, sans texte autour, sans balises 
   ]
 }
 Le tableau "days" doit contenir exactement ${days} éléments, dans l'ordre chronologique. Les valeurs de macros par 100g doivent être des estimations nutritionnelles réalistes pour chaque ingrédient. L'unité doit être une de: g, ml, pièce, cs, cc.
+Si l'unité est "pièce" (ex. 2 oeufs, 1 banane), remplis obligatoirement "piece_weight_g" avec le poids réaliste en grammes d'UNE pièce de cet ingrédient précis (ex. 50 pour un oeuf, 120 pour une banane) — sinon laisse "piece_weight_g" à null.
 Rappel : un repas qui réutilise une recette existante n'a PAS besoin du champ "ingredients", juste {"slot": "...", "reuse": "Nom exact"}.`
 
   const startedAt = Date.now()

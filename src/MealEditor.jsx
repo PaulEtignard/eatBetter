@@ -29,6 +29,7 @@ function emptyIngredient() {
     carbs_per_100g: '',
     fat_per_100g: '',
     off_code: null,
+    piece_weight_g: 100,
   }
 }
 

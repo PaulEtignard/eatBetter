@@ -66,8 +66,7 @@ export function formatWeekRange(monday) {
 export function mealMacros(ingredients) {
   return ingredients.reduce(
     (acc, ing) => {
-      const gramsEquivalent = (Number(ing.quantity) || 0) * (UNIT_GRAM_EQUIVALENTS[ing.unit] ?? 1)
-      const factor = gramsEquivalent / 100
+      const factor = gramsEquivalent(ing) / 100
       acc.calories += (Number(ing.calories_per_100g) || 0) * factor
       acc.protein += (Number(ing.protein_per_100g) || 0) * factor
       acc.carbs += (Number(ing.carbs_per_100g) || 0) * factor
@@ -76,6 +75,17 @@ export function mealMacros(ingredients) {
     },
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   )
+}
+
+// Converts an ingredient's quantity+unit to a grams-equivalent, for use with its
+// always-per-100g macro fields. "pièce" needs a per-ingredient piece weight since a
+// bagel and an egg don't weigh the same (defaults to 100g if unset).
+export function gramsEquivalent(ing) {
+  const quantity = Number(ing.quantity) || 0
+  if (ing.unit === 'pièce') {
+    return quantity * (Number(ing.piece_weight_g) || 100)
+  }
+  return quantity * (UNIT_GRAM_EQUIVALENTS[ing.unit] ?? 1)
 }
 
 export function round(n) {

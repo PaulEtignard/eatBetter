@@ -823,6 +823,30 @@ button {
   font-size: 0.72rem;
   color: var(--sage);
 }
+.piece-weight-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  font-size: 0.75rem;
+  color: var(--chalk-dim);
+}
+.piece-weight-row input {
+  width: 64px;
+  background: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  color: var(--chalk);
+  font-size: 0.78rem;
+}
+.piece-weight-total {
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--citrus);
+}
 .ing-macro-unit {
   color: var(--chalk-dim);
 }
