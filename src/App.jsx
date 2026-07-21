@@ -303,12 +303,20 @@ export default function App() {
 
   async function handleGenerateMenu(params, onProgress) {
     console.log('[handleGenerateMenu] called with params:', params)
-    // Give the AI a compact summary of existing household recipes so it can reuse them
-    const existingMeals = meals.map((m) => ({
+
+    function normalizeName(str) {
+      return str.trim().toLowerCase()
+    }
+
+    // Give the AI a compact summary of existing household recipes so it can reuse them.
+    // This list grows as the loop below discovers newly-invented recipes, so day 3 knows
+    // about recipes invented on day 1 within the SAME generation run.
+    const knownMeals = meals.map((m) => ({
       name: m.name,
       category: m.category,
       calories: Math.round(mealMacros(m.ingredients).calories),
     }))
+    const knownNames = new Set(knownMeals.map((m) => normalizeName(m.name)))
 
     const userId = session.user.id
     const memberId = params.memberId
@@ -334,7 +342,7 @@ export default function App() {
             dailyFat: params.dailyFat,
             slots: params.slots,
             preferences: params.preferences,
-            existingMeals,
+            existingMeals: knownMeals,
           }),
         })
       } catch (networkErr) {
@@ -366,7 +374,19 @@ export default function App() {
         throw new Error(`L'IA n'a pas réussi à générer le jour ${i + 1} (${data.error || 'réponse vide'}). Réessaie.`)
       }
 
-      allDayResults.push(data.days[0])
+      const dayResult = data.days[0]
+      allDayResults.push(dayResult)
+
+      // Feed this day's newly-invented recipes into the pool the NEXT day's prompt will see
+      ;(dayResult.meals || []).forEach((meal) => {
+        const effectiveName = meal.reuse || meal.name
+        const key = normalizeName(effectiveName)
+        if (!knownNames.has(key)) {
+          knownNames.add(key)
+          const cal = Array.isArray(meal.ingredients) ? Math.round(mealMacros(meal.ingredients).calories) : 0
+          knownMeals.push({ name: effectiveName, category: meal.slot, calories: cal })
+        }
+      })
     }
 
     if (onProgress) onProgress('Enregistrement du menu…')
@@ -378,8 +398,7 @@ export default function App() {
         flatMeals.push({
           dayIndex,
           slot: meal.slot,
-          name: meal.name,
-          reuse: meal.reuse || null,
+          name: meal.reuse || meal.name,
           ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
         })
       })
@@ -389,17 +408,33 @@ export default function App() {
       throw new Error("L'IA n'a généré aucun repas.")
     }
 
-    // Resolve "reuse" entries against the existing household recipe library by name
-    const mealByLowerName = new Map(meals.map((m) => [m.name.trim().toLowerCase(), m]))
+    // Dedupe by normalized recipe name: against the existing household library first,
+    // then within this very batch (across days), so repeated/near-identical names collapse
+    // into a single recipe instead of piling up duplicates.
+    const dbMealByName = new Map(meals.map((m) => [normalizeName(m.name), m]))
+    const batchKeyToMeal = new Map() // normalized name -> { name, ingredients } chosen for creation
     const toCreate = []
-    const resolved = flatMeals.map((m) => {
-      if (m.reuse) {
-        const existing = mealByLowerName.get(m.reuse.trim().toLowerCase())
-        if (existing) return { ...m, existingMealId: existing.id }
+
+    flatMeals.forEach((m) => {
+      const key = normalizeName(m.name)
+      if (dbMealByName.has(key)) return // will resolve to existing DB meal later
+      if (batchKeyToMeal.has(key)) {
+        // Prefer an occurrence that actually has ingredients over an empty "reuse" stub
+        const current = batchKeyToMeal.get(key)
+        if (current.ingredients.length === 0 && m.ingredients.length > 0) {
+          batchKeyToMeal.set(key, m)
+        }
+        return
       }
-      toCreate.push(m)
-      return m
+      batchKeyToMeal.set(key, m)
     })
+    batchKeyToMeal.forEach((m) => toCreate.push(m))
+
+    console.log(
+      '[handleGenerateMenu] flat meals:', flatMeals.length,
+      '| reused from existing library:', flatMeals.filter((m) => dbMealByName.has(normalizeName(m.name))).length,
+      '| new unique recipes to create:', toCreate.length
+    )
 
     // 1. Bulk create only the genuinely new meal rows
     let insertedMeals = []
@@ -447,21 +482,20 @@ export default function App() {
       }
     }
 
-    // Map each newly created meal back to its flat entry
-    let createIdx = 0
-    const finalMealIds = resolved.map((m) => {
-      if (m.existingMealId) return m.existingMealId
-      const id = insertedMeals[createIdx].id
-      createIdx += 1
-      return id
+    // Build a normalized-name -> meal_id map covering both the existing DB library
+    // and the recipes just created in this batch
+    const keyToMealId = new Map()
+    dbMealByName.forEach((meal, key) => keyToMealId.set(key, meal.id))
+    toCreate.forEach((m, idx) => {
+      keyToMealId.set(normalizeName(m.name), insertedMeals[idx].id)
     })
 
     // 2. Bulk place each meal on its target day/slot, for the chosen member
-    const placementRows = resolved.map((m, idx) => ({
+    const placementRows = flatMeals.map((m) => ({
       user_id: userId,
       household_id: household.id,
       member_id: memberId,
-      meal_id: finalMealIds[idx],
+      meal_id: keyToMealId.get(normalizeName(m.name)),
       plan_date: toISODate(addDays(weekMonday, m.dayIndex)),
       slot: m.slot,
     }))
