@@ -268,10 +268,47 @@ button {
   font-size: 0.82rem;
   line-height: 1.4;
 }
+.ai-generate-btn {
+  width: 100%;
+  margin-bottom: 12px;
+}
+.meal-search {
+  width: 100%;
+  background: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--chalk);
+  font-size: 0.82rem;
+  margin-bottom: 10px;
+}
+.category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.category-tab {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 11px;
+  font-size: 0.7rem;
+  color: var(--chalk-dim);
+  cursor: pointer;
+}
+.category-tab.is-active {
+  background: var(--citrus);
+  border-color: var(--citrus);
+  color: #241a02;
+  font-weight: 600;
+}
 .meal-library-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 55vh;
+  overflow-y: auto;
 }
 .library-meal-card {
   background: var(--surface-raised);
@@ -453,7 +490,8 @@ button {
   color: var(--chalk-dim);
 }
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   background: var(--ink);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -622,6 +660,10 @@ button {
   border-radius: 10px;
   vertical-align: middle;
 }
+.autocomplete-badge.badge-ai {
+  background: #a86fb0;
+  color: var(--chalk);
+}
 .autocomplete-list button:hover .autocomplete-kcal {
   color: #10201a;
 }
@@ -691,6 +733,46 @@ button {
   }
   .ingredient-card-main {
     grid-template-columns: 1fr 60px 80px auto;
+  }
+}
+
+/* ---------- Generate menu modal ---------- */
+.generate-intro {
+  color: var(--chalk-dim);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0;
+}
+.macro-target-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.slot-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 4px;
+}
+.slot-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--chalk);
+  cursor: pointer;
+}
+.generate-loading {
+  color: var(--citrus);
+  font-size: 0.82rem;
+  background: rgba(232, 185, 48, 0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+}
+@media (max-width: 560px) {
+  .macro-target-grid {
+    grid-template-columns: 1fr;
   }
 }
 

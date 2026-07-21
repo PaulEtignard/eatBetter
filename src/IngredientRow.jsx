@@ -88,6 +88,7 @@ export default function IngredientRow({ ingredient, onChange, onRemove }) {
                     <span className="autocomplete-name">
                       {s.name}
                       {s.source === 'local' && <span className="autocomplete-badge">aliment brut</span>}
+                      {s.source === 'ai' && <span className="autocomplete-badge badge-ai">estimation IA</span>}
                     </span>
                     <span className="autocomplete-kcal">{round(s.calories_per_100g)} kcal/100g</span>
                   </button>

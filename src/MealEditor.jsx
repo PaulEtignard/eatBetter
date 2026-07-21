@@ -4,6 +4,14 @@ import { mealMacros, round } from './utils'
 
 const COLORS = ['#e8b930', '#c1502e', '#8fa998', '#5b7a9d', '#a86fb0']
 
+const CATEGORIES = [
+  { key: '', label: 'Non catégorisé' },
+  { key: 'breakfast', label: 'Petit-déj' },
+  { key: 'lunch', label: 'Déjeuner' },
+  { key: 'snack', label: 'Collation' },
+  { key: 'dinner', label: 'Dîner' },
+]
+
 let tempId = 0
 function nextId() {
   tempId -= 1
@@ -28,6 +36,7 @@ export default function MealEditor({ initialMeal, onCancel, onSave, onDelete }) 
   const [name, setName] = useState(initialMeal?.name || '')
   const [notes, setNotes] = useState(initialMeal?.notes || '')
   const [color, setColor] = useState(initialMeal?.color || COLORS[0])
+  const [category, setCategory] = useState(initialMeal?.category || '')
   const [ingredients, setIngredients] = useState(
     initialMeal?.ingredients?.length ? initialMeal.ingredients.map((i) => ({ ...i })) : [emptyIngredient()]
   )
@@ -56,7 +65,7 @@ export default function MealEditor({ initialMeal, onCancel, onSave, onDelete }) 
     setSaving(true)
     setError('')
     try {
-      await onSave({ name: name.trim(), notes, color, ingredients })
+      await onSave({ name: name.trim(), notes, color, category: category || null, ingredients })
     } catch (e) {
       setError(e.message || "Impossible d'enregistrer ce repas")
     } finally {
@@ -86,20 +95,31 @@ export default function MealEditor({ initialMeal, onCancel, onSave, onDelete }) 
               />
             </label>
 
-            <div className="field field-color">
-              <span>Étiquette</span>
-              <div className="color-picker">
-                {COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    className={`color-swatch ${color === c ? 'is-selected' : ''}`}
-                    style={{ background: c }}
-                    onClick={() => setColor(c)}
-                    aria-label={`Couleur ${c}`}
-                  />
+            <label className="field field-category">
+              Type de repas
+              <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                {CATEGORIES.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
+                  </option>
                 ))}
-              </div>
+              </select>
+            </label>
+          </div>
+
+          <div className="field field-color">
+            <span>Étiquette</span>
+            <div className="color-picker">
+              {COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`color-swatch ${color === c ? 'is-selected' : ''}`}
+                  style={{ background: c }}
+                  onClick={() => setColor(c)}
+                  aria-label={`Couleur ${c}`}
+                />
+              ))}
             </div>
           </div>
 

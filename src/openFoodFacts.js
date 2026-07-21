@@ -1,8 +1,9 @@
 import { searchCommonIngredients } from './commonIngredients'
 
-// Looks up an ingredient's macro profile (per 100g): local common-foods table first
-// (instant, covers raw fruit/veg/meat that Open Food Facts poorly covers), then the
-// Open Food Facts API via our own serverless proxy (avoids the browser CORS restriction).
+// Looks up an ingredient's macro profile (per 100g), in three tiers:
+// 1. Local common-foods table (instant, covers raw fruit/veg/meat OFF handles poorly)
+// 2. Open Food Facts API via our own serverless proxy (avoids the browser CORS restriction)
+// 3. AI estimate (only if the first two found nothing) via a serverless OpenRouter proxy
 export async function searchIngredientMacros(term) {
   if (!term || term.trim().length < 2) return []
 
@@ -15,11 +16,19 @@ export async function searchIngredientMacros(term) {
     apiMatches = []
   }
 
-  // Avoid showing near-duplicate entries when a local match already covers a name
   const localNames = new Set(localMatches.map((m) => m.name.toLowerCase()))
   const dedupedApiMatches = apiMatches.filter((m) => !localNames.has(m.name.toLowerCase()))
 
-  return [...localMatches, ...dedupedApiMatches]
+  const combined = [...localMatches, ...dedupedApiMatches]
+  if (combined.length > 0) return combined
+
+  // Nothing found locally or via Open Food Facts: ask the AI as a last resort
+  try {
+    const aiMatch = await searchAIFallback(term)
+    return aiMatch ? [aiMatch] : []
+  } catch {
+    return []
+  }
 }
 
 async function searchOpenFoodFactsAPI(term) {
@@ -40,4 +49,12 @@ async function searchOpenFoodFactsAPI(term) {
       source: 'off',
     }))
     .filter((p) => p.calories_per_100g != null)
+}
+
+async function searchAIFallback(term) {
+  const res = await fetch(`/api/ai-macros?name=${encodeURIComponent(term)}`)
+  if (!res.ok) return null
+  const data = await res.json()
+  if (!data.result || data.result.calories_per_100g == null) return null
+  return { ...data.result, code: null }
 }
