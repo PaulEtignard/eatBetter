@@ -327,6 +327,12 @@ button {
   color: var(--citrus);
   margin-top: 2px;
 }
+.day-macros {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--sage);
+  margin-top: 1px;
+}
 .calendar-slot-label {
   display: flex;
   align-items: center;

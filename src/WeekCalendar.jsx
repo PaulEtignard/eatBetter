@@ -33,21 +33,35 @@ export default function WeekCalendar({
     <div className="calendar-grid">
       <div className="calendar-corner" />
       {weekDays.map((day) => {
-        const dayTotal = SLOTS.reduce((sum, slot) => {
-          const placements = placementsByDayAndSlot[day.iso]?.[slot.key] || []
-          return (
-            sum +
-            placements.reduce((s, p) => {
+        const dayTotals = SLOTS.reduce(
+          (acc, slot) => {
+            const placements = placementsByDayAndSlot[day.iso]?.[slot.key] || []
+            placements.forEach((p) => {
               const meal = mealsById[p.meal_id]
-              return s + (meal ? mealMacros(meal.ingredients).calories : 0)
-            }, 0)
-          )
-        }, 0)
+              if (!meal) return
+              const m = mealMacros(meal.ingredients)
+              acc.calories += m.calories
+              acc.protein += m.protein
+              acc.carbs += m.carbs
+              acc.fat += m.fat
+            })
+            return acc
+          },
+          { calories: 0, protein: 0, carbs: 0, fat: 0 }
+        )
+        const hasMeals = dayTotals.calories > 0
         return (
           <div className="calendar-day-header" key={day.iso}>
             <div className="day-name">{day.label}</div>
             <div className="day-date">{day.date.getDate()}</div>
-            {dayTotal > 0 && <div className="day-kcal">{round(dayTotal)} kcal</div>}
+            {hasMeals && (
+              <>
+                <div className="day-kcal">{round(dayTotals.calories)} kcal</div>
+                <div className="day-macros">
+                  P {round(dayTotals.protein)} · G {round(dayTotals.carbs)} · L {round(dayTotals.fat)}
+                </div>
+              </>
+            )}
           </div>
         )
       })}
