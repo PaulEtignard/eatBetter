@@ -32,6 +32,7 @@ export default function MobileMealPicker({ meals, dayLabel, slotLabel, onPick, o
             placeholder="Rechercher un repas…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            autoComplete="off"
             autoFocus
           />
           {meals.length === 0 && (

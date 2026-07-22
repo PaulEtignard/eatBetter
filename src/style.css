@@ -1257,3 +1257,37 @@ button {
   color: #241a02;
   font-weight: 600;
 }
+
+/* ---------- Mobile overflow fixes ---------- */
+@media (max-width: 700px) {
+  .macro-pill {
+    white-space: normal;
+    display: inline-block;
+    line-height: 1.4;
+  }
+
+  .mobile-picker-item {
+    align-items: flex-start;
+  }
+  .mobile-picker-item .library-meal-name {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+  .mobile-picker-item .library-meal-kcal {
+    flex-shrink: 0;
+    white-space: nowrap;
+    margin-left: 10px;
+    padding-top: 2px;
+  }
+
+  .mobile-placed-main {
+    min-width: 0;
+  }
+  .mobile-placed-name {
+    overflow-wrap: break-word;
+  }
+  .placed-meal-kcal {
+    white-space: nowrap;
+  }
+}
