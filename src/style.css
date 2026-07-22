@@ -989,3 +989,271 @@ button {
     overflow-x: auto;
   }
 }
+
+/* ---------- Mobile (<=700px): dedicated day-by-day calendar ---------- */
+.mobile-only {
+  display: none;
+}
+.desktop-only {
+  display: block;
+}
+
+@media (max-width: 700px) {
+  .mobile-only {
+    display: block;
+  }
+  .desktop-only {
+    display: none;
+  }
+
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .app-header {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .app-title h1 {
+    font-size: 1.15rem;
+  }
+  .week-nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .week-nav .btn {
+    padding: 6px 10px;
+    font-size: 0.72rem;
+  }
+  .week-range {
+    font-size: 0.78rem;
+    min-width: auto;
+    order: -1;
+    width: 100%;
+    margin-bottom: 2px;
+  }
+  .header-actions {
+    order: 2;
+    margin-left: auto;
+    gap: 6px;
+  }
+  .header-actions .btn-small {
+    padding: 7px 10px;
+    font-size: 0.75rem;
+  }
+
+  .app-main {
+    padding: 12px 12px 90px;
+    gap: 14px;
+  }
+
+  .meal-library {
+    padding: 14px;
+  }
+  .meal-library-list {
+    max-height: none;
+  }
+  .library-meal-card {
+    cursor: pointer;
+  }
+
+  .modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modal {
+    max-width: none;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 92vh;
+  }
+  .modal.meal-editor,
+  .modal.generate-menu {
+    max-width: none;
+  }
+  .ingredient-card-main {
+    grid-template-columns: 1fr 56px 74px auto;
+    gap: 6px;
+  }
+  .ing-manual-macros {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .macro-target-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mobile-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mobile-day-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  -webkit-overflow-scrolling: touch;
+}
+.mobile-day-chip {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  color: var(--chalk-dim);
+  cursor: pointer;
+}
+.mobile-day-chip.is-active {
+  background: var(--citrus);
+  border-color: var(--citrus);
+  color: #241a02;
+}
+.mobile-day-chip-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+}
+.mobile-day-chip-date {
+  font-family: 'Fraunces', serif;
+  font-size: 1.05rem;
+}
+
+.mobile-day-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4px 2px 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.mobile-day-header h2 {
+  font-size: 1.25rem;
+}
+.mobile-day-totals {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.mobile-slot-section {
+  margin-bottom: 18px;
+}
+.mobile-slot-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--chalk-dim);
+  margin: 0 0 8px 2px;
+}
+
+.mobile-placed-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--citrus);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  position: relative;
+}
+.mobile-placed-card.is-mine {
+  box-shadow: inset 0 0 0 1px rgba(232, 185, 48, 0.3);
+}
+.mobile-placed-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: none;
+  border: none;
+  text-align: left;
+  width: 100%;
+  padding: 0;
+  cursor: pointer;
+  color: var(--chalk);
+}
+.mobile-placed-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.mobile-placed-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+.mobile-duplicate-menu {
+  position: static;
+  margin-top: 8px;
+  box-shadow: none;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.mobile-add-btn {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  color: var(--chalk-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.mobile-add-btn:active {
+  background: rgba(232, 185, 48, 0.08);
+  border-color: var(--citrus);
+  color: var(--citrus);
+}
+
+/* Mobile meal picker / move modals */
+.mobile-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mobile-picker-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface-raised);
+  border: none;
+  border-left: 4px solid var(--citrus);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--chalk);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.mobile-move-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+}
+.mobile-move-chip {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  color: var(--chalk-dim);
+  cursor: pointer;
+}
+.mobile-move-chip.is-active {
+  background: var(--citrus);
+  border-color: var(--citrus);
+  color: #241a02;
+  font-weight: 600;
+}

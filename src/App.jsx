@@ -6,6 +6,7 @@ import ProfileModal from './ProfileModal'
 import PortionEditor from './PortionEditor'
 import MealLibrary from './MealLibrary'
 import WeekCalendar from './WeekCalendar'
+import MobileWeekCalendar from './MobileWeekCalendar'
 import MealEditor from './MealEditor'
 import ShoppingList from './ShoppingList'
 import GenerateMenuModal from './GenerateMenuModal'
@@ -635,21 +636,44 @@ export default function App() {
         {dataLoading ? (
           <div className="full-screen-center">Chargement du planning…</div>
         ) : (
-          <WeekCalendar
-            weekDays={weekDays}
-            placementsByDayAndSlot={placementsByDayAndSlot}
-            mealsById={mealsById}
-            membersById={membersById}
-            members={members}
-            currentMemberId={currentMember.id}
-            overridesByPlacementId={overridesByPlacementId}
-            onDropOnSlot={handleDropOnSlot}
-            onOpenPortion={handleOpenPortion}
-            onRemovePlacement={handleRemovePlacement}
-            onDuplicateForMember={handleDuplicateForMember}
-            dragOverKey={dragOverKey}
-            setDragOverKey={setDragOverKey}
-          />
+          <>
+            <div className="desktop-only">
+              <WeekCalendar
+                weekDays={weekDays}
+                placementsByDayAndSlot={placementsByDayAndSlot}
+                mealsById={mealsById}
+                membersById={membersById}
+                members={members}
+                currentMemberId={currentMember.id}
+                overridesByPlacementId={overridesByPlacementId}
+                onDropOnSlot={handleDropOnSlot}
+                onOpenPortion={handleOpenPortion}
+                onRemovePlacement={handleRemovePlacement}
+                onDuplicateForMember={handleDuplicateForMember}
+                dragOverKey={dragOverKey}
+                setDragOverKey={setDragOverKey}
+              />
+            </div>
+            <div className="mobile-only">
+              <MobileWeekCalendar
+                weekDays={weekDays}
+                placementsByDayAndSlot={placementsByDayAndSlot}
+                mealsById={mealsById}
+                membersById={membersById}
+                members={members}
+                currentMemberId={currentMember.id}
+                overridesByPlacementId={overridesByPlacementId}
+                meals={meals}
+                onAddMeal={(mealId, iso, slotKey) => handleDropOnSlot({ type: 'library', mealId }, iso, slotKey)}
+                onMoveMeal={(plannedMealId, iso, slotKey) =>
+                  handleDropOnSlot({ type: 'placed', plannedMealId }, iso, slotKey)
+                }
+                onOpenPortion={handleOpenPortion}
+                onRemovePlacement={handleRemovePlacement}
+                onDuplicateForMember={handleDuplicateForMember}
+              />
+            </div>
+          </>
         )}
       </main>
 
