@@ -380,3 +380,56 @@ button { font-family: inherit; }
 .goal-ring-label { font-size: 0.66rem; color: var(--ink-3); font-weight: 550; text-transform: uppercase; letter-spacing: 0.03em; }
 .goal-encouragement { margin: 0; font-size: 0.98rem; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; flex: 1; min-width: 200px; }
 .goal-bar-mobile .goal-encouragement { font-size: 0.9rem; width: 100%; flex: none; text-align: center; }
+
+/* ---------- Onboarding ---------- */
+.onb-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: var(--bg-sunken); }
+.onb-card { width: 100%; max-width: 480px; background: var(--card); border: 1px solid var(--line); border-radius: 24px; padding: 40px 36px; box-shadow: var(--shadow-md); }
+.onb-progress { display: flex; gap: 7px; justify-content: center; margin-bottom: 30px; }
+.onb-dot { width: 28px; height: 4px; border-radius: 2px; background: var(--line-2); transition: background 0.3s; }
+.onb-dot.is-done { background: var(--ink); }
+.onb-step { display: flex; flex-direction: column; }
+.onb-step h1 { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; }
+.onb-lede { color: var(--ink-3); font-size: 0.98rem; line-height: 1.55; margin: 12px 0 0; }
+.onb-welcome { text-align: center; align-items: center; }
+.onb-mark { font-size: 3rem; margin-bottom: 8px; }
+.onb-features { display: flex; flex-direction: column; gap: 16px; margin: 28px 0; width: 100%; text-align: left; }
+.onb-feature { display: flex; gap: 14px; align-items: flex-start; }
+.onb-feature-icon { font-size: 1.1rem; width: 38px; height: 38px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--bg-sunken); border-radius: 11px; color: var(--ink); }
+.onb-feature strong { display: block; font-size: 0.94rem; font-weight: 600; }
+.onb-feature span { display: block; font-size: 0.86rem; color: var(--ink-3); margin-top: 2px; line-height: 1.4; }
+.onb-cta { width: 100%; margin-top: 8px; padding: 14px; font-size: 0.98rem; }
+
+.onb-presets { display: flex; gap: 8px; margin: 22px 0 20px; }
+.onb-preset { flex: 1; background: var(--bg-sunken); border: 1.5px solid transparent; border-radius: 14px; padding: 14px 10px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; align-items: center; transition: all 0.15s; }
+.onb-preset.is-active { border-color: var(--ink); background: var(--card); }
+.onb-preset-label { font-size: 0.82rem; font-weight: 600; }
+.onb-preset-kcal { font-size: 0.74rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.onb-goals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.onb-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 30px; }
+.onb-nav .btn { flex: 1; }
+
+.onb-demo { margin: 24px 0 4px; }
+.onb-demo-rings { display: flex; justify-content: center; gap: 40px; margin-bottom: 24px; }
+.onb-demo-ring { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.onb-demo-ring-center { position: absolute; top: 0; left: 0; right: 0; height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+.onb-demo-ring-value { font-size: 1.25rem; font-weight: 750; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+.onb-demo-ring-target { font-size: 0.66rem; color: var(--ink-3); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.onb-demo-ring-label { font-size: 0.72rem; color: var(--ink-3); font-weight: 550; text-transform: uppercase; letter-spacing: 0.03em; }
+.onb-demo-meals { display: flex; flex-direction: column; gap: 8px; }
+.onb-demo-meal { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg-sunken); border: 1.5px solid transparent; border-radius: 13px; padding: 12px 14px; cursor: pointer; text-align: left; transition: all 0.15s; }
+.onb-demo-meal.is-added { border-color: var(--ink); background: var(--card); }
+.onb-demo-meal-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.onb-demo-meal-slot { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 650; }
+.onb-demo-meal-name { font-size: 0.9rem; font-weight: 550; }
+.onb-demo-meal-kcal { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: var(--ink-2); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.onb-demo-meal-toggle { width: 24px; height: 24px; border-radius: 50%; background: var(--card); border: 1.5px solid var(--line-2); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+.onb-demo-meal.is-added .onb-demo-meal-toggle { background: var(--ink); color: #fff; border-color: var(--ink); }
+.onb-demo-success { margin: 18px 0 0; font-size: 0.9rem; font-weight: 600; color: var(--positive); text-align: center; }
+
+@media (max-width: 700px) {
+  .onb-card { padding: 32px 22px; border-radius: 22px; }
+  .onb-step h1 { font-size: 1.45rem; }
+  .onb-presets { flex-direction: column; }
+  .onb-preset { flex-direction: row; justify-content: space-between; }
+  .onb-goals-grid { grid-template-columns: 1fr 1fr; }
+}

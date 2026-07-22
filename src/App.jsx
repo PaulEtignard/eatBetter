@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react'
 import { supabase } from './supabaseClient'
 import Auth from './Auth'
 import HouseholdGate from './HouseholdGate'
+import Onboarding from './Onboarding'
 import ProfileModal from './ProfileModal'
 import PortionEditor from './PortionEditor'
 import MealLibrary from './MealLibrary'
@@ -348,6 +349,10 @@ export default function App() {
 
   if (!currentMember || !household) {
     return <HouseholdGate session={session} onReady={loadHousehold} />
+  }
+
+  if (!currentMember.onboarded) {
+    return <Onboarding member={currentMember} onDone={loadHousehold} />
   }
 
   return (
