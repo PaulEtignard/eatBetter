@@ -118,7 +118,7 @@ export default function MobileWeekCalendar({
                 <div
                   key={p.id}
                   className={`mobile-placed-card ${isMine ? 'is-mine' : ''}`}
-                  style={{ "--card-accent": meal.color }}
+                  style={{ borderLeftColor: meal.color }}
                 >
                   <button className="mobile-placed-main" onClick={() => onOpenPortion(p, meal)}>
                     <span className="placed-meal-member">{memberName}</span>

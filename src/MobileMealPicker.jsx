@@ -49,7 +49,7 @@ export default function MobileMealPicker({ meals, dayLabel, slotLabel, onPick, o
                   key={meal.id}
                   type="button"
                   className="mobile-picker-item"
-                  style={{ "--card-accent": meal.color }}
+                  style={{ borderLeftColor: meal.color }}
                   onClick={() => onPick(meal.id)}
                 >
                   <span className="library-meal-name">{meal.name}</span>

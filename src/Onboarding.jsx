@@ -237,11 +237,11 @@ function DemoRing({ label, value, target, pct }) {
   const radius = (size - 9) / 2
   const circ = 2 * Math.PI * radius
   const dash = (pct / 100) * circ
-  const stroke = pct >= 85 ? 'var(--positive)' : 'var(--ink)'
+  const stroke = pct >= 85 ? '#8fa998' : '#e8b930'
   return (
     <div className="onb-demo-ring">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--line-2)" strokeWidth="6" />
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(242,239,226,0.12)" strokeWidth="6" />
         <circle
           cx={size / 2}
           cy={size / 2}

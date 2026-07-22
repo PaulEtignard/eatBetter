@@ -7,11 +7,11 @@ function Ring({ value, target, label, unit, size = 64 }) {
   const radius = (size - 8) / 2
   const circ = 2 * Math.PI * radius
   const dash = (pct / 100) * circ
-  const stroke = over ? 'var(--warn)' : pct >= 85 ? 'var(--positive)' : 'var(--ink)'
+  const stroke = over ? '#c1502e' : pct >= 85 ? '#8fa998' : '#e8b930'
   return (
     <div className="goal-ring">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--line-2)" strokeWidth="5" />
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(242,239,226,0.12)" strokeWidth="5" />
         <circle
           cx={size / 2}
           cy={size / 2}

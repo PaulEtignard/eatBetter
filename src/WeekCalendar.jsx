@@ -107,7 +107,7 @@ export default function WeekCalendar({
                     <div
                       key={p.id}
                       className={`placed-meal-card ${isMine ? 'is-mine' : ''}`}
-                      style={{ "--card-accent": meal.color }}
+                      style={{ borderLeftColor: meal.color }}
                       draggable
                       onDragStart={(e) =>
                         e.dataTransfer.setData(
