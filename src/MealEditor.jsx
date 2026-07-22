@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import IngredientRow from './IngredientRow'
 import { mealMacros, round } from './utils'
 
@@ -43,6 +43,14 @@ export default function MealEditor({ initialMeal, onCancel, onSave, onDelete }) 
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onCancel])
 
   // AI: describe a dish in plain language, get a full recipe pre-filled
   const [aiDescription, setAiDescription] = useState('')
@@ -130,8 +138,13 @@ export default function MealEditor({ initialMeal, onCancel, onSave, onDelete }) 
   }
 
   return (
-    <div className="modal-backdrop" onClick={onCancel}>
-      <div className="modal meal-editor" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop">
+      <div
+        className="modal meal-editor"
+        role="dialog"
+        aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <h2>{initialMeal ? 'Modifier le repas' : 'Nouveau repas'}</h2>
           <button className="icon-btn" onClick={onCancel} aria-label="Fermer">
