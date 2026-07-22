@@ -1501,3 +1501,63 @@ button {
   margin: 4px 0 0;
   font-family: 'JetBrains Mono', monospace;
 }
+
+/* ---------- AI describe-a-dish ---------- */
+.ai-describe {
+  background: linear-gradient(135deg, rgba(143, 169, 152, 0.12), rgba(232, 185, 48, 0.08));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 4px;
+}
+.ai-describe-header {
+  margin-bottom: 10px;
+}
+.ai-describe-title {
+  font-family: 'Fraunces', serif;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.ai-describe-input {
+  width: 100%;
+  background: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--chalk);
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+.ai-describe-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+.ai-servings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--chalk-dim);
+}
+.ai-servings input {
+  width: 70px;
+  background: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 9px;
+  color: var(--chalk);
+  font-size: 0.85rem;
+}
+.ai-describe-hint {
+  font-size: 0.75rem;
+  color: var(--chalk-dim);
+  line-height: 1.4;
+  margin: 10px 0 0;
+}
+.ai-describe-error {
+  margin: 10px 0 0;
+}
