@@ -82,7 +82,7 @@ export default function MealLibrary({ meals, onNewMeal, onOpenMeal, onOpenCoach 
             <div
               key={meal.id}
               className="library-meal-card"
-              style={{ borderLeftColor: meal.color }}
+              style={{ "--card-accent": meal.color }}
               draggable
               onDragStart={(e) =>
                 e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'library', mealId: meal.id }))
