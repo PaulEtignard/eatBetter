@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { SLOTS, mealMacros, applyOverrides, round } from './utils'
 import MobileMealPicker from './MobileMealPicker'
 import MobileMoveMeal from './MobileMoveMeal'
+import DailyGoalBar from './DailyGoalBar'
 
 export default function MobileWeekCalendar({
   weekDays,
@@ -10,6 +11,7 @@ export default function MobileWeekCalendar({
   membersById,
   members,
   currentMemberId,
+  currentMember,
   overridesByPlacementId,
   meals,
   onAddMeal,
@@ -80,6 +82,22 @@ export default function MobileWeekCalendar({
           </div>
         )}
       </div>
+
+      <DailyGoalBar
+        totals={dayTotals}
+        targets={{
+          calories: currentMember?.daily_calories_target,
+          protein: currentMember?.daily_protein_target,
+          carbs: currentMember?.daily_carbs_target,
+          fat: currentMember?.daily_fat_target,
+        }}
+        mealCount={SLOTS.reduce(
+          (n, s) =>
+            n + (placementsByDayAndSlot[day.iso]?.[s.key] || []).filter((p) => p.member_id === currentMemberId).length,
+          0
+        )}
+        variant="mobile"
+      />
 
       {SLOTS.map((slot) => {
         const placements = placementsByDayAndSlot[day.iso]?.[slot.key] || []

@@ -10,8 +10,9 @@ import MobileWeekCalendar from './MobileWeekCalendar'
 import MealEditor from './MealEditor'
 import ShoppingList from './ShoppingList'
 import CoachModal from './CoachModal'
+import DailyGoalBar from './DailyGoalBar'
 import { cacheIngredientMacros } from './openFoodFacts'
-import { getMonday, getWeekDays, addDays, formatWeekRange, toISODate, mealMacros } from './utils'
+import { getMonday, getWeekDays, addDays, formatWeekRange, toISODate, mealMacros, applyOverrides } from './utils'
 
 const SLOT_COLORS = {
   breakfast: '#e8b930',
@@ -167,6 +168,29 @@ export default function App() {
     })
     return map
   }, [plannedMeals])
+
+  // Today's progress for the desktop goal bar (falls back to the first day of the
+  // displayed week if today isn't in view)
+  const { todayTotals, todayMealCount } = useMemo(() => {
+    if (!currentMember) return { todayTotals: { calories: 0, protein: 0, carbs: 0, fat: 0 }, todayMealCount: 0 }
+    const todayIso = toISODate(new Date())
+    const focusIso = weekDays.some((d) => d.iso === todayIso) ? todayIso : weekDays[0]?.iso
+    const mine = plannedMeals.filter((p) => p.member_id === currentMember.id && p.plan_date === focusIso)
+    const totals = mine.reduce(
+      (acc, p) => {
+        const meal = mealsById[p.meal_id]
+        if (!meal) return acc
+        const m = mealMacros(applyOverrides(meal.ingredients, overridesByPlacementId[p.id]))
+        acc.calories += m.calories
+        acc.protein += m.protein
+        acc.carbs += m.carbs
+        acc.fat += m.fat
+        return acc
+      },
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    )
+    return { todayTotals: totals, todayMealCount: mine.length }
+  }, [currentMember, weekDays, plannedMeals, mealsById, overridesByPlacementId])
 
   async function handleSaveMeal({ name, notes, color, category, ingredients }) {
     const userId = session.user.id
@@ -374,6 +398,17 @@ export default function App() {
         ) : (
           <>
             <div className="desktop-only">
+              <DailyGoalBar
+                totals={todayTotals}
+                targets={{
+                  calories: currentMember.daily_calories_target,
+                  protein: currentMember.daily_protein_target,
+                  carbs: currentMember.daily_carbs_target,
+                  fat: currentMember.daily_fat_target,
+                }}
+                mealCount={todayMealCount}
+                variant="desktop"
+              />
               <WeekCalendar
                 weekDays={weekDays}
                 placementsByDayAndSlot={placementsByDayAndSlot}
@@ -398,6 +433,7 @@ export default function App() {
                 membersById={membersById}
                 members={members}
                 currentMemberId={currentMember.id}
+                currentMember={currentMember}
                 overridesByPlacementId={overridesByPlacementId}
                 meals={meals}
                 onAddMeal={(mealId, iso, slotKey) => handleDropOnSlot({ type: 'library', mealId }, iso, slotKey)}

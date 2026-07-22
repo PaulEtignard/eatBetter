@@ -362,3 +362,21 @@ button { font-family: inherit; }
 .mobile-move-chips { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
 .mobile-move-chip { background: var(--bg-sunken); border: none; border-radius: 100px; padding: 9px 15px; font-size: 0.84rem; color: var(--ink-2); cursor: pointer; font-weight: 500; }
 .mobile-move-chip.is-active { background: var(--ink); color: #fff; }
+
+/* ---------- Daily goal bar (motivation) ---------- */
+.goal-bar {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 18px 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+}
+.goal-bar-mobile { padding: 16px; gap: 14px; margin-bottom: 16px; }
+.goal-rings { display: flex; gap: 22px; flex-wrap: wrap; }
+.goal-bar-mobile .goal-rings { gap: 14px; justify-content: space-between; width: 100%; }
+.goal-ring { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.goal-ring svg { display: block; }
+.goal-ring-center { position: absolute; top: 0; left: 0; right: 0; height: 66px; display: flex; align-items: center; justify-content: center; gap: 1px; pointer-events: none; }
+.goal-bar-mobile .goal-ring-center { height: 58px; }
+.goal-ring-value { font-size: 0.98rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.goal-ring-target { font-size: 0.66rem; color: var(--ink-3); font-weight: 500; font-variant-numeric: tabular-nums; }
+.goal-ring-label { font-size: 0.66rem; color: var(--ink-3); font-weight: 550; text-transform: uppercase; letter-spacing: 0.03em; }
+.goal-encouragement { margin: 0; font-size: 0.98rem; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; flex: 1; min-width: 200px; }
+.goal-bar-mobile .goal-encouragement { font-size: 0.9rem; width: 100%; flex: none; text-align: center; }
