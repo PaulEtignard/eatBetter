@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import IngredientRow from './IngredientRow'
 import { mealMacros, round } from './utils'
 
-const COLORS = ['#e8b930', '#c1502e', '#8fa998', '#5b7a9d', '#a86fb0']
+const COLORS = ['#ef9f2e', '#cf3568', '#3f8f4a', '#7b4bd0', '#4a90b8']
 
 const CATEGORIES = [
   { key: '', label: 'Non catégorisé' },

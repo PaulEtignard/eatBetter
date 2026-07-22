@@ -187,8 +187,8 @@ export default function CoachModal({
 
 function ringStyle(score) {
   const s = Math.max(0, Math.min(100, Number(score) || 0))
-  const color = s >= 75 ? '#8fa998' : s >= 50 ? '#e8b930' : '#c1502e'
+  const color = s >= 75 ? '#3f8f4a' : s >= 50 ? '#ef9f2e' : '#cf3568'
   return {
-    background: `conic-gradient(${color} ${s * 3.6}deg, rgba(242,239,226,0.1) 0deg)`,
+    background: `conic-gradient(${color} ${s * 3.6}deg, rgba(36,32,26,0.1) 0deg)`,
   }
 }
