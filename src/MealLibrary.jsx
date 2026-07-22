@@ -10,7 +10,7 @@ const CATEGORY_TABS = [
   { key: 'none', label: 'Autre' },
 ]
 
-export default function MealLibrary({ meals, onNewMeal, onOpenMeal, onOpenGenerate }) {
+export default function MealLibrary({ meals, onNewMeal, onOpenMeal, onOpenCoach }) {
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
 
@@ -35,9 +35,9 @@ export default function MealLibrary({ meals, onNewMeal, onOpenMeal, onOpenGenera
         </button>
       </div>
 
-      {onOpenGenerate && (
-        <button type="button" className="btn btn-secondary btn-small ai-generate-btn" onClick={onOpenGenerate}>
-          ✨ Générer un menu avec l'IA
+      {onOpenCoach && (
+        <button type="button" className="btn btn-secondary btn-small ai-generate-btn" onClick={onOpenCoach}>
+          ✨ Coach de la semaine
         </button>
       )}
 

@@ -1291,3 +1291,213 @@ button {
     white-space: nowrap;
   }
 }
+
+/* ---------- Visual food search ---------- */
+.autocomplete-row {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+}
+.autocomplete-thumb {
+  width: 38px;
+  height: 38px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: var(--ink);
+  flex-shrink: 0;
+}
+.autocomplete-thumb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  border: 1px solid var(--border);
+}
+.autocomplete-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.autocomplete-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.autocomplete-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.autocomplete-brand {
+  font-size: 0.7rem;
+  color: var(--chalk-dim);
+}
+.autocomplete-kcal {
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--citrus);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1;
+}
+.autocomplete-kcal small {
+  font-size: 0.55rem;
+  color: var(--chalk-dim);
+  font-weight: 400;
+}
+.autocomplete-row:hover .autocomplete-kcal,
+.autocomplete-row:hover .autocomplete-kcal small,
+.autocomplete-row:hover .autocomplete-brand {
+  color: #10201a;
+}
+.nutriscore {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #10201a;
+}
+.nutriscore-a { background: #2e9b4f; color: #fff; }
+.nutriscore-b { background: #85bb2f; color: #10201a; }
+.nutriscore-c { background: #f4c430; color: #10201a; }
+.nutriscore-d { background: #ef8200; color: #fff; }
+.nutriscore-e { background: #e63e11; color: #fff; }
+
+/* ---------- Coach modal ---------- */
+.modal.coach-modal {
+  max-width: 520px;
+}
+.coach-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 0;
+  color: var(--chalk-dim);
+}
+.coach-spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid rgba(232, 185, 48, 0.2);
+  border-top-color: var(--citrus);
+  animation: spin 0.8s linear infinite;
+}
+.coach-result {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.coach-score-block {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.coach-score-ring {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+}
+.coach-score-ring::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: var(--surface);
+}
+.coach-score-value {
+  position: relative;
+  font-family: 'Fraunces', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.coach-score-max {
+  position: relative;
+  font-size: 0.65rem;
+  color: var(--chalk-dim);
+}
+.coach-headline {
+  font-family: 'Fraunces', serif;
+  font-size: 1.15rem;
+  line-height: 1.35;
+  margin: 0;
+}
+.coach-macro-verdict {
+  background: var(--surface-raised);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.coach-macro-verdict p {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.coach-section-eyebrow {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--chalk-dim);
+}
+.coach-eyebrow-good {
+  color: var(--sage);
+}
+.coach-eyebrow-warn {
+  color: var(--citrus);
+}
+.coach-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.coach-list li {
+  position: relative;
+  padding-left: 20px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.coach-list li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--chalk-dim);
+}
+.coach-eyebrow-good + .coach-list li::before { background: var(--sage); }
+.coach-eyebrow-warn + .coach-list li::before { background: var(--citrus); }
+.coach-tips li::before {
+  content: '→';
+  background: none;
+  top: 0;
+  left: 0;
+  color: var(--sage);
+  font-weight: 700;
+}
+.coach-footnote {
+  font-size: 0.72rem;
+  color: var(--chalk-dim);
+  text-align: center;
+  margin: 4px 0 0;
+  font-family: 'JetBrains Mono', monospace;
+}

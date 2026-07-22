@@ -9,7 +9,7 @@ import WeekCalendar from './WeekCalendar'
 import MobileWeekCalendar from './MobileWeekCalendar'
 import MealEditor from './MealEditor'
 import ShoppingList from './ShoppingList'
-import GenerateMenuModal from './GenerateMenuModal'
+import CoachModal from './CoachModal'
 import { cacheIngredientMacros } from './openFoodFacts'
 import { getMonday, getWeekDays, addDays, formatWeekRange, toISODate, mealMacros } from './utils'
 
@@ -40,8 +40,8 @@ export default function App() {
   const [editorState, setEditorState] = useState(null) // null | 'new' | meal object
   const [portionState, setPortionState] = useState(null) // null | { placement, meal }
   const [showShoppingList, setShowShoppingList] = useState(false)
-  const [showGenerateMenu, setShowGenerateMenu] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  const [showCoach, setShowCoach] = useState(false)
   const [dragOverKey, setDragOverKey] = useState(null)
 
   useEffect(() => {
@@ -313,270 +313,6 @@ export default function App() {
     setEditorState(meal)
   }
 
-  async function handleGenerateMenu(params, onProgress) {
-    console.log('[handleGenerateMenu] called with params:', params)
-
-    function normalizeName(str) {
-      return str.trim().toLowerCase()
-    }
-
-    // Cap how many times any single recipe (existing or newly invented) can appear across
-    // the whole generated period, so the AI is forced toward variety instead of always
-    // reaching for the same "safe" match once it's in the known-recipes pool.
-    const USAGE_CAP = 2
-
-    // Give the AI a compact summary of existing household recipes so it can reuse them.
-    // This list grows as the loop below discovers newly-invented recipes, so day 3 knows
-    // about recipes invented on day 1 within the SAME generation run.
-    const knownMeals = meals.map((m) => ({
-      name: m.name,
-      category: m.category,
-      calories: Math.round(mealMacros(m.ingredients).calories),
-    }))
-    const usageCount = new Map()
-
-    const userId = session.user.id
-    const memberId = params.memberId
-    const totalDays = params.days
-
-    // Slots already occupied by this member's own placements: the AI still invents/creates
-    // recipes for every day+slot (so the library grows), but we won't place a new meal on
-    // top of a cell this member has already filled in. Query fresh instead of trusting
-    // React state, which could be stale if this runs right after another change.
-    const { data: freshPlanned, error: freshErr } = await supabase
-      .from('planned_meals')
-      .select('plan_date, slot, member_id')
-      .eq('member_id', memberId)
-    if (freshErr) throw freshErr
-    const occupiedKeys = new Set(freshPlanned.map((p) => `${p.plan_date}__${p.slot}`))
-    console.log('[handleGenerateMenu] occupied cells for this member:', occupiedKeys.size)
-
-    // Generate one day at a time: a full week in one request risks exceeding the
-    // serverless function's execution time limit and failing silently.
-    const allDayResults = []
-    for (let i = 0; i < totalDays; i += 1) {
-      if (onProgress) onProgress(`Génération du jour ${i + 1} / ${totalDays}…`)
-      console.log(`[generateMenu] requesting day ${i + 1}/${totalDays}…`)
-
-      // Only offer recipes that haven't already hit the reuse cap
-      const availableForReuse = knownMeals.filter(
-        (km) => (usageCount.get(normalizeName(km.name)) || 0) < USAGE_CAP
-      )
-
-      let res
-      try {
-        res = await fetch('/api/generate-menu', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            days: 1,
-            dailyCalories: params.dailyCalories,
-            dailyProtein: params.dailyProtein,
-            dailyCarbs: params.dailyCarbs,
-            dailyFat: params.dailyFat,
-            slots: params.slots,
-            preferences: params.preferences,
-            existingMeals: availableForReuse,
-          }),
-        })
-      } catch (networkErr) {
-        console.error('[generateMenu] network error on fetch:', networkErr)
-        throw new Error(`Impossible de contacter le serveur pour le jour ${i + 1} (erreur réseau). Vérifie ta connexion et réessaie.`)
-      }
-
-      console.log(`[generateMenu] day ${i + 1} response status:`, res.status)
-
-      let data
-      try {
-        data = await res.json()
-      } catch (parseErr) {
-        console.error('[generateMenu] failed to parse JSON response:', parseErr)
-        throw new Error(
-          `Le serveur n'a pas répondu correctement pour le jour ${i + 1} (délai dépassé ou erreur réseau, statut ${res.status}). Réessaie.`
-        )
-      }
-
-      console.log(`[generateMenu] day ${i + 1} data:`, data)
-
-      if (data.error === 'missing_api_key') {
-        throw new Error(
-          "La clé OpenRouter n'est pas configurée côté serveur (variable OPENROUTER_API_KEY manquante sur Vercel)."
-        )
-      }
-      if (data.error || !Array.isArray(data.days) || data.days.length === 0) {
-        console.error(`[generateMenu] day ${i + 1} generation failed:`, data)
-        throw new Error(`L'IA n'a pas réussi à générer le jour ${i + 1} (${data.error || 'réponse vide'}). Réessaie.`)
-      }
-
-      const dayResult = data.days[0]
-      allDayResults.push(dayResult)
-
-      // Track usage and feed newly-invented recipes into the pool for subsequent days
-      ;(dayResult.meals || []).forEach((meal) => {
-        const effectiveName = meal.reuse || meal.name
-        const key = normalizeName(effectiveName)
-        usageCount.set(key, (usageCount.get(key) || 0) + 1)
-        if (!knownMeals.some((km) => normalizeName(km.name) === key)) {
-          const cal = Array.isArray(meal.ingredients) ? Math.round(mealMacros(meal.ingredients).calories) : 0
-          knownMeals.push({ name: effectiveName, category: meal.slot, calories: cal })
-        }
-      })
-    }
-
-    if (onProgress) onProgress('Enregistrement du menu…')
-
-    // Flatten every generated meal across all days into one list
-    const flatMeals = []
-    allDayResults.forEach((day, dayIndex) => {
-      ;(day.meals || []).forEach((meal) => {
-        flatMeals.push({
-          dayIndex,
-          slot: meal.slot,
-          name: meal.reuse || meal.name,
-          ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
-        })
-      })
-    })
-
-    if (flatMeals.length === 0) {
-      throw new Error("L'IA n'a généré aucun repas.")
-    }
-
-    // Dedupe by normalized recipe name: against the existing household library first,
-    // then within this very batch (across days), so repeated/near-identical names collapse
-    // into a single recipe instead of piling up duplicates.
-    const dbMealByName = new Map(meals.map((m) => [normalizeName(m.name), m]))
-    const batchKeyToMeal = new Map() // normalized name -> { name, ingredients } chosen for creation
-    const toCreate = []
-
-    flatMeals.forEach((m) => {
-      const key = normalizeName(m.name)
-      if (dbMealByName.has(key)) return // will resolve to existing DB meal later
-      if (batchKeyToMeal.has(key)) {
-        // Prefer an occurrence that actually has ingredients over an empty "reuse" stub
-        const current = batchKeyToMeal.get(key)
-        if (current.ingredients.length === 0 && m.ingredients.length > 0) {
-          batchKeyToMeal.set(key, m)
-        }
-        return
-      }
-      batchKeyToMeal.set(key, m)
-    })
-    batchKeyToMeal.forEach((m) => toCreate.push(m))
-
-    console.log(
-      '[handleGenerateMenu] flat meals:', flatMeals.length,
-      '| reused from existing library:', flatMeals.filter((m) => dbMealByName.has(normalizeName(m.name))).length,
-      '| new unique recipes to create:', toCreate.length
-    )
-
-    // 1. Bulk create only the genuinely new meal rows
-    let insertedMeals = []
-    if (toCreate.length > 0) {
-      console.log('[handleGenerateMenu] creating', toCreate.length, 'new meals')
-      const mealRows = toCreate.map((m) => ({
-        user_id: userId,
-        household_id: household.id,
-        name: m.name,
-        color: SLOT_COLORS[m.slot] || '#e8b930',
-        category: m.slot,
-        ai_generated: true,
-      }))
-      const { data: created, error: mealsErr } = await supabase.from('meals').insert(mealRows).select()
-      if (mealsErr) {
-        console.error('[handleGenerateMenu] meals insert failed:', mealsErr)
-        throw mealsErr
-      }
-      insertedMeals = created
-
-      const ingredientRows = []
-      toCreate.forEach((m, idx) => {
-        const mealId = insertedMeals[idx].id
-        m.ingredients.forEach((ing, position) => {
-          if (!ing.name || !ing.name.trim()) return
-          ingredientRows.push({
-            meal_id: mealId,
-            name: ing.name.trim(),
-            quantity: Number(ing.quantity) || 0,
-            unit: ing.unit || 'g',
-            calories_per_100g: ing.calories_per_100g != null ? Number(ing.calories_per_100g) : null,
-            protein_per_100g: ing.protein_per_100g != null ? Number(ing.protein_per_100g) : null,
-            carbs_per_100g: ing.carbs_per_100g != null ? Number(ing.carbs_per_100g) : null,
-            fat_per_100g: ing.fat_per_100g != null ? Number(ing.fat_per_100g) : null,
-            piece_weight_g: ing.unit === 'pièce' ? Number(ing.piece_weight_g) || 100 : null,
-            position,
-          })
-        })
-      })
-      if (ingredientRows.length > 0) {
-        const { error: ingErr } = await supabase.from('meal_ingredients').insert(ingredientRows)
-        if (ingErr) {
-          console.error('[handleGenerateMenu] ingredients insert failed:', ingErr)
-          throw ingErr
-        }
-        cacheIngredientMacros(ingredientRows.map((r) => ({ ...r, source: 'ai' })))
-      }
-    }
-
-    // Build a normalized-name -> meal_id map covering both the existing DB library
-    // and the recipes just created in this batch
-    const keyToMealId = new Map()
-    dbMealByName.forEach((meal, key) => keyToMealId.set(key, meal.id))
-    toCreate.forEach((m, idx) => {
-      keyToMealId.set(normalizeName(m.name), insertedMeals[idx].id)
-    })
-
-    // 2. Bulk place each meal on its target day/slot, for the chosen member —
-    // skipping any cell that member has already filled in, and de-duplicating
-    // within this batch as a safety net (e.g. if the AI ever returns two meals
-    // for the same slot in one day)
-    const skippedMeals = []
-    const placementRows = []
-    const placedKeysThisRun = new Set()
-    flatMeals.forEach((m) => {
-      const iso = toISODate(addDays(weekMonday, m.dayIndex))
-      const key = `${iso}__${m.slot}`
-      if (occupiedKeys.has(key) || placedKeysThisRun.has(key)) {
-        skippedMeals.push(m)
-        return
-      }
-      placedKeysThisRun.add(key)
-      placementRows.push({
-        user_id: userId,
-        household_id: household.id,
-        member_id: memberId,
-        meal_id: keyToMealId.get(normalizeName(m.name)),
-        plan_date: iso,
-        slot: m.slot,
-      })
-    })
-
-    if (skippedMeals.length > 0) {
-      console.log(
-        `[handleGenerateMenu] ${skippedMeals.length} recette(s) créée(s) mais non placée(s) (créneau déjà occupé):`,
-        skippedMeals.map((m) => `${m.name} (jour ${m.dayIndex + 1}, ${m.slot})`)
-      )
-    }
-
-    console.log('[handleGenerateMenu] placing', placementRows.length, 'meals on the calendar')
-    if (placementRows.length > 0) {
-      const { error: placeErr } = await supabase.from('planned_meals').insert(placementRows)
-      if (placeErr) {
-        console.error('[handleGenerateMenu] placements insert failed:', placeErr)
-        throw placeErr
-      }
-    }
-
-    console.log('[handleGenerateMenu] success, reloading data')
-    setShowGenerateMenu(false)
-    if (skippedMeals.length > 0) {
-      setInfoMsg(
-        `Menu généré : ${placementRows.length} repas placés. ${skippedMeals.length} recette(s) créée(s) et ajoutée(s) à ta bibliothèque, mais pas placées car ces créneaux étaient déjà occupés.`
-      )
-      setTimeout(() => setInfoMsg(''), 8000)
-    }
-    await loadData()
-  }
 
   if (authLoading || (session && householdLoading)) {
     return <div className="full-screen-center">Chargement…</div>
@@ -630,7 +366,7 @@ export default function App() {
           meals={meals}
           onNewMeal={() => setEditorState('new')}
           onOpenMeal={(meal) => setEditorState(meal)}
-          onOpenGenerate={() => setShowGenerateMenu(true)}
+          onOpenCoach={() => setShowCoach(true)}
         />
 
         {dataLoading ? (
@@ -696,11 +432,15 @@ export default function App() {
         />
       )}
 
-      {showGenerateMenu && (
-        <GenerateMenuModal
-          members={members}
-          onCancel={() => setShowGenerateMenu(false)}
-          onGenerate={handleGenerateMenu}
+      {showCoach && (
+        <CoachModal
+          member={currentMember}
+          weekDays={weekDays}
+          weekLabel={formatWeekRange(weekMonday)}
+          plannedMeals={plannedMeals}
+          mealsById={mealsById}
+          overridesByPlacementId={overridesByPlacementId}
+          onClose={() => setShowCoach(false)}
         />
       )}
 

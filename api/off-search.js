@@ -8,7 +8,7 @@ export default async function handler(req, res) {
 
   const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(
     q
-  )}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,code,nutriments`
+  )}&search_simple=1&action=process&json=1&page_size=12&sort_by=unique_scans_n&fields=product_name,brands,code,image_front_small_url,nutriments,serving_quantity,nutriscore_grade`
 
   try {
     const offResponse = await fetch(url, {

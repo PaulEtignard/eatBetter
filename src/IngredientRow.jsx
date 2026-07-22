@@ -58,9 +58,6 @@ export default function IngredientRow({ ingredient, onChange, onRemove }) {
       off_code: s.code || null,
       source: s.source || null,
     })
-    // AI-sourced values are estimates and can hallucinate: surface the editable fields
-    // immediately so the person can eyeball and correct them right away if needed.
-    if (s.source === 'ai') setShowManualMacros(true)
   }
 
   function handleUnitChange(newUnit) {
@@ -116,19 +113,31 @@ export default function IngredientRow({ ingredient, onChange, onRemove }) {
                 <li key={s.code || `${s.source}-${idx}`}>
                   <button
                     type="button"
+                    className="autocomplete-row"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => selectSuggestion(s)}
                   >
-                    <span className="autocomplete-name">
-                      {s.name}
-                      {s.source === 'local' && <span className="autocomplete-badge">aliment brut</span>}
-                      {s.source === 'ai' && <span className="autocomplete-badge badge-ai">estimation IA</span>}
-                      {s.source === 'cached-ai' && (
-                        <span className="autocomplete-badge badge-ai">IA (déjà vue)</span>
-                      )}
-                      {s.source === 'cached' && <span className="autocomplete-badge">déjà vue</span>}
+                    {s.image ? (
+                      <img className="autocomplete-thumb" src={s.image} alt="" loading="lazy" />
+                    ) : (
+                      <span className="autocomplete-thumb autocomplete-thumb-placeholder">
+                        {s.source === 'local' ? '🥗' : '🍽'}
+                      </span>
+                    )}
+                    <span className="autocomplete-body">
+                      <span className="autocomplete-name">{s.name}</span>
+                      <span className="autocomplete-meta">
+                        {s.brand && <span className="autocomplete-brand">{s.brand}</span>}
+                        {s.source === 'local' && <span className="autocomplete-badge">aliment brut</span>}
+                        {s.source === 'cached' && <span className="autocomplete-badge">déjà vue</span>}
+                        {s.nutriscore && (
+                          <span className={`nutriscore nutriscore-${s.nutriscore}`}>
+                            {s.nutriscore.toUpperCase()}
+                          </span>
+                        )}
+                      </span>
                     </span>
-                    <span className="autocomplete-kcal">{round(s.calories_per_100g)} kcal/100g</span>
+                    <span className="autocomplete-kcal">{round(s.calories_per_100g)}<small>kcal</small></span>
                   </button>
                 </li>
               ))}
